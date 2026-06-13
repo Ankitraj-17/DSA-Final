@@ -1,0 +1,6 @@
+.vscode/
+smart_waste_system
+fix_format.py
+*.o
+*.out
+.DS_Store
