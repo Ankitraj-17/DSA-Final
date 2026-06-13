@@ -1,0 +1,26 @@
+5
+1
+Suresh Mehta
+Main Street
+Overflowing bin near bus stop
+High
+2
+Anita Desai
+Park Avenue
+Missed collection Thursday
+Medium
+3
+Vikram Joshi
+Industrial Area
+Hazardous waste leakage
+High
+4
+Meera Patel
+Residential North
+Request new recycling bin
+Low
+5
+Karan Gupta
+Market District
+Foul odour from bins
+Medium

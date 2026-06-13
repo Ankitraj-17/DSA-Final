@@ -1,0 +1,51 @@
+10
+101
+Main Street
+92
+Organic
+500
+103
+Industrial Area
+88.5
+General
+1000
+104
+Residential North
+30
+Organic
+400
+105
+Residential South
+76
+Recyclable
+400
+106
+Market District
+95
+General
+600
+107
+Commercial Hub
+55
+Hazardous
+750
+108
+University Area
+40
+Recyclable
+350
+109
+Town Square
+83
+Organic
+450
+110
+Riverside Zone
+62
+General
+550
+1003
+mumbai
+50
+wet
+7
