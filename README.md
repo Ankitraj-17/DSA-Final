@@ -196,7 +196,7 @@ When launched, the program displays a clean status summary dashboard and a grid 
   |  [4] Vehicle Management                                |
   |  [5] Route Planning                                    |
   |  [6] Environmental Report                              |
-  |  [7] System Performance                                |
+  |  [7] Technical Analysis                                |
   |  [8] Recovery Log                                      |
   |  [0] Exit                                              |
   +--------------------------------------------------------+

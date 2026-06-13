@@ -799,7 +799,7 @@ void environmentalReport() {
 }
 
 void complexityAnalysis() {
-    cout << "\n  === System Performance Complexity ===\n";
+    cout << "\n  === Technical Analysis Complexity ===\n";
     vector<int> w = {26, 18, 12}; drawLine(w); printRow({"Feature Area", "Time Complexity", "Extra Space"}, w); drawLine(w);
     printRow({"Bin add/search/remove", "O(log N)", "O(1)"}, w);
     printRow({"Vehicle plate lookup", "O(1) average", "O(1)"}, w);
@@ -809,14 +809,14 @@ void complexityAnalysis() {
     printRow({"Search by bin ID", "O(log N)", "O(1)"}, w);
     printRow({"Search by location", "O(N)", "O(1)"}, w);
     printRow({"Area coverage check", "O(V + E)", "O(V)"}, w);
-    printRow({"Shortest route planning", "O(V + E log V)", "O(V)"}, w); drawLine(w);
+    printRow({"Shortest route planning", "O(V^2 + E)", "O(V)"}, w); drawLine(w);
     cout << "  Scale Info: N = bins count, V = zones (10), E = connections (12)\n";
-    action_stack.push("Viewed system performance summary"); pressEnterToContinue();
+    action_stack.push("Viewed technical analysis summary"); pressEnterToContinue();
 }
 
-void systemPerformance() {
+void technicalAnalysis() {
     cout << "\n  +--------------------------------------------------+\n"
-         << "  |                System Performance                |\n"
+         << "  |                Technical Analysis                |\n"
          << "  +--------------------------------------------------+\n"
          << "  |  [1] Primary Storage Status                      |\n"
          << "  |  [2] Backup Storage Status                       |\n"
@@ -868,7 +868,7 @@ int main() {
              << "  |  [4] Vehicle Management                                |\n"
              << "  |  [5] Route Planning                                    |\n"
              << "  |  [6] Environmental Report                              |\n"
-             << "  |  [7] System Performance                                |\n"
+             << "  |  [7] Technical Analysis                                |\n"
              << "  |  [8] Recovery Log                                      |\n"
              << "  |  [0] Exit                                              |\n"
              << "  +--------------------------------------------------------+\n"
@@ -880,7 +880,7 @@ int main() {
         else if (choice == 4) vehicleRegistry();
         else if (choice == 5) routeOptimizer();
         else if (choice == 6) environmentalReport();
-        else if (choice == 7) systemPerformance();
+        else if (choice == 7) technicalAnalysis();
         else if (choice == 8) operationalRecovery();
         else if (choice == 0) { cout << "\n  Thank you for using the Smart Waste Management System!\n"; delete city_graph; break; }
         else cout << "  Invalid choice. Try again.\n";
