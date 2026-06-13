@@ -1,10 +1,8 @@
-# DSA-FINAL-PROJECT
-
 # Smart Waste Collection & Recycling Management System
 
 ## 2.1 Project Title
 
-**Smart Waste Collection & Recycling Management System Using Data Structures and Algorithms**
+**Smart Waste Collection & Recycling Management System Using Data Structures and Algorithms in C++**
 
 ---
 
@@ -22,13 +20,13 @@ The system supports scheduling, service request processing, operational recovery
 
 The primary objectives of this project are:
 
-* Prioritize high-waste generation zones using optimal Sorting Algorithms for collection schedules.
-* Retrieve collection and recycling records rapidly using robust Searching Algorithms.
-* Manage operational recovery procedures efficiently using a Stack mechanism.
-* Process incoming service requests in a fair, sequential order using a Queue.
-* Store and maintain waste management databases dynamically using BST & AVL Trees for balanced performance.
-* Optimize vehicle utilization and reduce collection costs by finding the shortest and most efficient collection routes using BFS, DFS, and Dijkstra's Algorithm.
-* Enable rapid asset identification and tracking using Hashing techniques.
+* Prioritize high-waste generation zones using optimal **Custom Heap Sort** and **Quick Sort** Algorithms for collection schedules.
+* Retrieve collection and recycling records rapidly using robust **Binary Search** and **Linear Search**.
+* Manage operational recovery log procedures efficiently using a **Custom Linked-List Stack** mechanism (Undo actions).
+* Process incoming citizen service requests in a fair, sequential order using a **Custom Linked-List Queue**.
+* Store and maintain waste management databases dynamically using **BST & AVL Trees** for balanced performance.
+* Optimize vehicle utilization and reduce collection costs by finding the shortest and most efficient collection routes using **BFS, DFS, and Dijkstra's Algorithm** on road networks.
+* Enable rapid asset identification and tracking using a **Custom Hash Table with Chaining Collision Resolution**.
 * Improve recycling efficiency and enhance overall environmental sustainability through data-driven structures.
 * Demonstrate the practical applications of multiple DSA concepts in a real-world municipal environment.
 
@@ -39,14 +37,13 @@ The primary objectives of this project are:
 ### System Workflow
 
 1. Citizens and authorities log service requests into the system.
-2. Service requests are processed in a FIFO manner via a Queue.
-3. New waste bins and recycling assets are registered and rapidly identified using a Hash Table.
-4. Waste management databases (bins, zones, vehicle statuses) are stored and maintained using AVL Trees.
-5. Collection schedules are dynamically prioritized using Sorting Algorithms.
-6. Vehicle routes to collection points are optimized using Dijkstra's Algorithm / BFS / DFS on the city's road network graph.
-7. Any accidental deletions or required rollbacks in operations are managed by a Stack for recovery.
-8. Historical collection and recycling records are quickly retrieved via Searching Algorithms.
-9. All data feeds into a Waste Management Dashboard displaying schedules, statistics, tracking, and reports.
+2. Service requests are processed in a FIFO manner via a **Custom Queue**.
+3. New waste bins and recycling assets are registered and rapidly identified using a **Custom Hash Table**.
+4. Waste management databases (bins, zones, vehicle statuses) are stored and balanced dynamically using **AVL & BST Trees**.
+5. Collection schedules are dynamically prioritized using **Heap Sort** (sorting by priorities).
+6. Vehicle routes to collection points are optimized using **Dijkstra's Algorithm / BFS / DFS** on the city's road network graph.
+7. Any accidental changes or required rollbacks in operations are managed by a **Custom Stack** for recovery log tracking.
+8. Historical collection and recycling records are quickly retrieved via **Binary Search** by ID or **Linear Search** by Location.
 
 ### Architecture Diagram
 
@@ -64,25 +61,25 @@ The primary objectives of this project are:
                          v
                +------------------+
                | Request Queue    |
-               | (Queue)          |
+               | (Custom Queue)   |
                +--------+---------+
                          |
-          +--------------+--------------+
-          |              |              |
-          v              v              v
-
-     +---------+    +---------+    +---------+
-     | AVL Tree|    | Sorting |    | Graph   |
-     | Database|    | Priorit.|    | Routing |
-     +---------+    +---------+    +---------+
-
-                         |
-                         v
-
-               +------------------+
-               | Recovery Stack   |
-               | (Stack)          |
-               +------------------+
+           +--------------+--------------+
+           |              |              |
+           v              v              v
+ 
+      +---------+    +---------+    +---------+
+      | AVL Tree|    | Sorting |    | Graph   |
+      | Database|    | Priorit.|    | Routing |
+      +---------+    +---------+    +---------+
+ 
+                          |
+                          v
+ 
+                +------------------+
+                | Recovery Stack   |
+                | (Custom Stack)   |
+                +------------------+
 ```
 *(Note: A Stack is maintained alongside for operational recovery / Undo actions)*
 
@@ -90,174 +87,161 @@ The primary objectives of this project are:
 
 ## 2.5 Data Structures and Algorithms Used
 
-| Feature               | Data Structure / Algorithm            | Purpose                                                        |
-| --------------------- | ------------------------------------- | -------------------------------------------------------------- |
-| Collection Scheduling | Sorting Algorithms (Merge/Quick Sort) | Prioritize waste collection schedules based on zone generation |
-| Record Retrieval      | Searching Algorithms (Binary Search)  | Retrieve collection and recycling records efficiently          |
-| Recovery Procedures   | Stack                                 | Manage operational recovery procedures and undo changes        |
-| Service Requests      | Queue                                 | Process citizen and municipal service requests                 |
-| Waste Database        | BST & AVL Trees                       | Store and maintain structured waste management databases       |
-| Route Optimization    | Graph (BFS, DFS, Dijkstra's)          | Optimize collection routes for vehicles to reduce costs        |
-| Asset Identification  | Hash Table                            | Enable rapid asset (bins, vehicles) identification             |
+| Feature | Data Structure / Algorithm | Purpose |
+| :--- | :--- | :--- |
+| **Collection Scheduling** | Custom Heap Sort & Quick Sort | Prioritize waste collection schedules based on fill levels and capacity. |
+| **Record Retrieval** | Binary Search & Linear Search | Retrieve collection and recycling records efficiently. |
+| **Recovery Procedures** | Custom Singly Linked-List Stack | Manage operational recovery procedures and undo changes. |
+| **Service Requests** | Custom Singly Linked-List Queue | Process citizen and municipal service requests in FIFO order. |
+| **Waste Database** | BST & AVL Trees | Store and maintain balanced waste management databases. |
+| **Route Optimization** | Graph (BFS, DFS, Dijkstra's) | Optimize collection routes for vehicles on the city map network. |
+| **Asset Identification** | Custom Hash Table (Collision Chaining) | Enable rapid GPS/RFID asset (bins, vehicles) identification. |
 
 ---
 
 ## 2.6 Implementation Approach
 
-### 1. Collection Scheduling (Sorting Algorithms)
-* Areas are assigned waste generation scores.
-* Sorting algorithms (like Quick Sort or Merge Sort) order the zones to prioritize high-waste generation zones for immediate dispatch.
+### 1. Collection Scheduling (Heap Sort & Quick Sort)
+* **Custom Heap Sort**: Implemented a min-heap structure sorting algorithm to arrange bins in descending order of priority scores ($score = level \times \frac{capacity}{100}$). 
+* **Custom Quick Sort**: Implemented descending partition-based Quick Sort to sort database subsets. No `std::sort` or library shortcuts are used.
 
 ### 2. Record Retrieval (Searching Algorithms)
-* Historical logs of recycled materials and collection times are kept sorted.
-* Binary Search is utilized to fetch specific records based on date or zone ID in logarithmic time.
+* **Binary Search**: Written standard loop-based Binary Search to query collection points by their unique IDs in $O(\log N)$ logarithmic time.
+* **Linear Search**: Written sequential string matching search using `toLowerCase` char loop helper for finding bins by location keyword in $O(N)$ time.
 
-### 3. Recovery Procedures (Stack)
-* Critical operational changes (e.g., reassigning a vehicle, marking a zone clear) are pushed onto a Stack.
-* An 'Undo' operation simply pops the last action, restoring the previous state seamlessly.
+### 3. Recovery Procedures (Custom Stack)
+* Critical operational modifications (e.g. adding new bins, routing vehicles) log descriptive strings onto a custom Stack.
+* The Stack is built using dynamic singly linked-list nodes, ensuring $O(1)$ push/pop operations.
 
-### 4. Service Requests (Queue)
-* Incoming requests for special pickups or overflowing bins enter a Queue.
-* The fleet processes these requests in a strict First-In-First-Out (FIFO) sequence to ensure fairness.
+### 4. Service Requests (Custom Queue)
+* Incoming service issues (e.g. overflowing bins) are enqueued in a custom FIFO Queue.
+* The Queue maintains `frontNode` and `rearNode` pointers to achieve $O(1)$ enqueue and dequeue times.
 
 ### 5. Waste Database (BST & AVL Trees)
-* The core database of registered collection points is stored in an AVL tree.
-* This ensures that insertions, deletions, and lookups remain strictly balanced, providing predictable performance as the city grows.
+* Bins are stored in an **AVL Tree** (primary storage) and **BST** (backup storage).
+* Height balancing rotates AVL Tree nodes ($LL$, $RR$, $LR$, $RL$ rotations) dynamically to guarantee $O(\log N)$ lookup performance.
 
 ### 6. Route Optimization (Graph Traversals & Dijkstra's)
-* The city map is modeled as a Graph where intersections are vertices and roads are edges with weights representing distance or traffic.
-* Dijkstra's algorithm finds the absolute shortest path for the collection trucks.
-* BFS/DFS are used to ensure all nodes in a specific neighborhood subclass are visited during a standard sweep.
+* City zones are modeled as a Graph of vertices and edges with weights (km distances).
+* **BFS** sweeps reachable nodes from a depot. **DFS** checks overall graph connectivity.
+* **Dijkstra's Algorithm** uses a classic linear distance scan array (no complex library priority queues) to find the shortest collection route.
 
-### 7. Asset Identification (Hashing)
-* RFID tags on bins and GPS IDs on vehicles are mapped using Hash Tables.
-* This provides O(1) average time complexity to locate an asset's current status and details.
+### 7. Asset Identification (Custom Hash Table)
+* Vehicle records are indexed inside a Hash Table of size 53 using polynomial rolling hashing ($h = \sum key[i] \times 31^i \pmod{53}$).
+* Collision resolution is handled via a custom singly linked-list chaining configuration (`Node* table[53]`).
 
 ---
 
 ## 2.7 Time and Space Complexity Analysis
 
-| Operation                         | Time Complexity  | Space Complexity |
-| --------------------------------- | ---------------- | ---------------- |
-| Sorting Schedules (Merge/Quick)   | O(N log N)       | O(N) or O(log N) |
-| Searching Records (Binary Search) | O(log N)         | O(1)             |
-| Stack Push/Pop                    | O(1)             | O(A)             |
-| Queue Enqueue/Dequeue             | O(1)             | O(S)             |
-| AVL Tree Insert/Search            | O(log D)         | O(D)             |
-| Graph Route (Dijkstra)            | O((V + E) log V) | O(V + E)         |
-| Hash Table Insert/Search          | O(1) Avg         | O(C)             |
+| Operation | Time Complexity | Space Complexity |
+| :--- | :--- | :--- |
+| **Heap Sort Scheduling** | $O(N \log N)$ | $O(1)$ auxiliary |
+| **Quick Sort Sorting** | $O(N \log N)$ average | $O(\log N)$ stack recursion |
+| **Binary Search lookup** | $O(\log N)$ | $O(1)$ |
+| **Stack push / pop** | $O(1)$ | $O(A)$ total actions |
+| **Queue enqueue / dequeue** | $O(1)$ | $O(S)$ total requests |
+| **AVL Tree insertion / lookup** | $O(\log D)$ | $O(D)$ total nodes |
+| **Graph Route (Dijkstra)** | $O(V^2 + E)$ | $O(V)$ auxiliary arrays |
+| **Hash Table insert / lookup** | $O(1)$ average | $O(C)$ total vehicles |
 
 *Where:*
-* **$N$** = Number of schedules/zones
-* **$A$** = Number of actions recorded for recovery
-* **$S$** = Number of service requests
-* **$D$** = Number of database entries (collection points)
-* **$V$** = Number of intersections (vertices)
-* **$E$** = Number of roads (edges)
-* **$C$** = Number of physical assets (bins/trucks)
+* **$N$** = Number of bins sorted
+* **$A$** = Number of logged recovery actions
+* **$S$** = Number of pending requests
+* **$D$** = Total registered bins in database
+* **$V$** = Number of zones/intersections (10)
+* **$E$** = Number of connections/roads (12)
+* **$C$** = Number of registered vehicles
 
 ---
 
 ## 2.8 Execution Steps
 
 ### Prerequisites
-* C++ Compiler (GCC/G++)
-* C++11 or above standard
+* C++ Compiler (GCC/G++ or Clang) supporting C++11 or higher.
 
 ### Compile
+Compile the source code using the following terminal command:
 ```bash
-g++ main.cpp -o SmartWasteManagement
+g++ -std=c++17 smart_waste_system.cpp -o smart_waste_system
 ```
 
 ### Run
+Launch the executable:
 ```bash
-./SmartWasteManagement
+./smart_waste_system
 ```
-
-### Menu Operations
-1. Register New Asset (Bin/Vehicle)
-2. Log Service Request
-3. Process Next Service Request
-4. Prioritize Collection Schedules
-5. Add Waste Collection Point to Database
-6. Optimize Vehicle Route (Find Shortest Path)
-7. Search Historical Records
-8. Undo Last Operational Change
-9. View Waste Management Dashboard
-10. Exit
 
 ---
 
 ## 2.9 Sample Inputs and Outputs
 
-### Route Optimization (Dijkstra's)
-
-**Input:**
+### 1. Main System Dashboard (Menu Layout)
+When launched, the program displays a clean status summary dashboard and a grid selection menu:
 ```text
-Start Node : Depot (0)
-Target Node : Sector 45 (7)
+  +--------------------------------------------------------+
+  |  Smart Waste Collection & Recycling Management System  |
+  +--------------------------------------------------------+
+  |  System Status                                         |
+  |    Total Bins          : 11                            |
+  |    Urgent Bins         : 4 need collection             |
+  |    Pending Requests    : 5 citizen issues              |
+  |    Registered Vehicles : 6                             |
+  |    Recommended Action  : Review Collection Planning    |
+  +--------------------------------------------------------+
+  |  [1] Waste Bin Management                              |
+  |  [2] Collection Planning                               |
+  |  [3] Citizen Service Requests                          |
+  |  [4] Vehicle Management                                |
+  |  [5] Route Planning                                    |
+  |  [6] Environmental Report                              |
+  |  [7] System Performance                                |
+  |  [8] Recovery Log                                      |
+  |  [0] Exit                                              |
+  +--------------------------------------------------------+
+  Enter Choice: 
 ```
 
-**Output:**
+### 2. Collection Scheduling (Heap Sorted Priority List)
+Selecting option `[2]` runs the custom Heap Sort algorithm and outputs the bins sorted by priority:
 ```text
-Optimal Route: Depot -> Sector 12 -> Sector 30 -> Sector 45
-Total Distance/Cost: 14.5 km
+  === Collection Priority List ===
+  +------------+----------+------------------------+--------+-------------------+
+  | Priority   | Bin ID   | Location               | Fill   | Action Required   |
+  +------------+----------+------------------------+--------+-------------------+
+  | 1          | 103      | Industrial Area        | 88%    | Collect Now       |
+  | 2          | 106      | Market District        | 95%    | Collect Now       |
+  | 3          | 101      | Main Street            | 92%    | Collect Now       |
+  | 4          | 107      | Commercial Hub         | 55%    | Schedule Soon     |
+  | 5          | 109      | Town Square            | 83%    | Collect Now       |
+  ...
 ```
 
-### Schedule Prioritization
-
-**Output:**
+### 3. Route Optimization (Dijkstra Shortest Path)
+Selecting option `[5]` -> option `[4]` computes the shortest routing paths across the road graph network:
 ```text
-Rank 1 | Waste Level: 95% | Zone: Commercial Hub
-Rank 2 | Waste Level: 82% | Zone: Residential Block A
-Rank 3 | Waste Level: 60% | Zone: Industrial Park
-```
+  Shortest Route from Central Depot to Recycling Center:
+  [Central Depot] --(3km)--> [Park Avenue] --(5km)--> [Market District] --(4km)--> [Recycling Center]
 
-### Service Request Processing
-
-**Input:**
-```text
-Add Request: Overflowing bin at Main Street
-```
-
-**Output:**
-```text
-Request Added to Queue.
-Processing Request: Overflowing bin at Main Street... Resolved.
+  Total Distance: 12 km
 ```
 
 ---
 
-## 2.10 Screenshots
+## 2.10 Results and Observations
 
-*Note: Replace with actual screenshots of your CLI/Dashboard implementation.*
-
-* **Main Dashboard / Menu**
-  *[Screenshot 2026-06-12 at 8 34 13 PM]*
-* **Asset Hashing Results**
-  *[Screenshot 2026-06-12 at 8 35 20 PM]*
-* **City Graph Routing**
-  *[Screenshot 2026-06-12 at 8 36 15 PM]*
-* **Prioritized Schedules**
-  *[Screenshot 2026-06-12 at 8 36 39 PM]*
+* **Modular Structuring**: Designing custom linked-list stacks and queues verified memory consumption bounds and isolated logic cleanly from standard STL boilerplate.
+* **Hash Collision Resolution**: Singly linked chaining demonstrated true polynomial hashing indexing and collision recovery, ensuring consistent $O(1)$ asset lookups.
+* **Balancing Trees**: AVL Tree rotations maintained logarithmic height bounds, preventing skewed trees even when loading sequential bin IDs (unlike basic BSTs).
+* **Dijkstra Utility**: The optimized pathfinder achieved significant reductions in simulated collection trip distances, proving graph theory's applicability to municipal fuel management.
+* **Redirection Safety**: The execution logic terminates cleanly upon reaching standard input EOF, avoiding terminal spinning or thread lockups when scripting.
 
 ---
 
-## 2.11 Results and Observations
+## 2.11 Conclusion
 
-* Successfully implemented a comprehensive suite of DSA concepts tailored for municipal waste management.
-* **Queues** effectively managed the backlog of citizen service requests without starvation.
-* **Hash Tables** proved essential for the instantaneous lookup of thousands of distributed assets.
-* **AVL Trees** maintained a robust, balanced database of collection points, ensuring fast queries regardless of data scale.
-* **Dijkstra’s Algorithm** drastically optimized the simulated routes, showcasing tangible reductions in travel distance and logical fuel costs.
-* **Sorting Algorithms** ensured that critical, high-waste zones were always serviced first, maximizing environmental hygiene.
-* **Stacks** provided a foolproof mechanism for operators to undo accidental route reassignments or database entries.
-
----
-
-## 2.12 Conclusion
-
-The Smart Waste Collection & Recycling Management System clearly demonstrates how foundational Data Structures and Algorithms can be orchestrated to solve complex logistical and environmental challenges. By integrating Queues, Stacks, Hash Tables, Trees, and Graph algorithms, the project transforms inefficient municipal routines into a highly optimized, prioritized, and trackable workflow.
+The Smart Waste Collection & Recycling Management System clearly demonstrates how fundamental Data Structures and Algorithms can be orchestrated to solve complex logistical and environmental challenges. By integrating custom Queues, Stacks, Hash Tables, Tree Nodes, and Graph algorithms, the project transforms inefficient municipal routines into a highly optimized, prioritized, and trackable workflow.
 
 This project not only satisfies the requirement of combining multiple algorithms into a single platform but also provides a strong conceptual framework for real-world integration with IoT bin sensors, GPS truck tracking, and live traffic data for future scaling.
 

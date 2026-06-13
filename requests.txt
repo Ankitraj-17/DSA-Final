@@ -1,9 +1,4 @@
 5
-1
-Suresh Mehta
-Main Street
-Overflowing bin near bus stop
-High
 2
 Anita Desai
 Park Avenue
@@ -24,3 +19,8 @@ Karan Gupta
 Market District
 Foul odour from bins
 Medium
+6
+aa
+aa
+ss
+low
