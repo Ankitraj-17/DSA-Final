@@ -263,4 +263,4 @@ This project not only satisfies the requirement of combining multiple algorithms
 
 ---
 **Author**
-*ITM Skills University - B.Tech CSE 2025-29 (Semester II)*
+*Ankitraj jha*
