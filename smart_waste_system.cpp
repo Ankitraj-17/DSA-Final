@@ -30,19 +30,12 @@ struct ServiceRequest { int id; string name, location, desc, urgency; };
 
 int readChoice() {
     int val = 0;
-    if (!(cin >> val)) {
-        if (cin.eof()) {
-            exit(0);
-        }
-        cin.clear();
-    }
-    cin.ignore(10000, '\n');
-    return val;
+    if (!(cin >> val)) { if (cin.eof()) exit(0); cin.clear(); }
+    cin.ignore(10000, '\n'); return val;
 }
 void pressEnterToContinue() {
     cout << "\n  Press Enter to continue...";
-    if (cin.eof()) exit(0);
-    cin.get();
+    if (cin.eof()) exit(0); cin.get();
 }
 
 string pad(string s, size_t len, bool rightAlign = false) {
@@ -57,41 +50,25 @@ void printRow(const vector<string>& cols, const vector<int>& widths) {
 }
 
 class Stack {
-    struct Node {
-        string data;
-        Node* next;
-    };
-    Node* topNode = nullptr;
-    int sz = 0;
+    struct Node { string data; Node* next; };
+    Node* topNode = nullptr; int sz = 0;
 public:
-    ~Stack() {
-        while (topNode) {
-            Node* temp = topNode;
-            topNode = topNode->next;
-            delete temp;
-        }
-    }
-    void push(string val) {
-        Node* temp = new Node{val, topNode};
-        topNode = temp;
-        sz++;
-    }
+    ~Stack() { while (topNode) { Node* temp = topNode; topNode = topNode->next; delete temp; } }
+    void push(string val) { topNode = new Node{val, topNode}; sz++; }
     string pop() {
         if (!topNode) return "";
-        Node* temp = topNode;
-        string val = temp->data;
-        topNode = topNode->next;
-        delete temp;
-        sz--;
-        return val;
+        Node* temp = topNode; string val = temp->data; topNode = topNode->next; delete temp; sz--; return val;
     }
     bool isEmpty() { return topNode == nullptr; }
     int size() { return sz; }
     void display() {
         if (!topNode) { cout << "  (Log is empty)\n"; return; }
         Node* current = topNode;
-        int i = 1; vector<int> w = {5, 55}; drawLine(w);
-        printRow({"No.", "Action Description"}, w); drawLine(w);
+        int i = 1;
+        vector<int> w = {5, 55};
+        drawLine(w);
+        printRow({"No.", "Action Description"}, w);
+        drawLine(w);
         while (current) {
             printRow({to_string(i++), current->data}, w);
             current = current->next;
@@ -101,50 +78,30 @@ public:
 };
 
 class Queue {
-    struct Node {
-        ServiceRequest data;
-        Node* next;
-    };
-    Node* frontNode = nullptr;
-    Node* rearNode = nullptr;
-    int sz = 0;
+    struct Node { ServiceRequest data; Node* next; };
+    Node *frontNode = nullptr, *rearNode = nullptr; int sz = 0;
 public:
-    ~Queue() {
-        while (frontNode) {
-            Node* temp = frontNode;
-            frontNode = frontNode->next;
-            delete temp;
-        }
-    }
+    ~Queue() { while (frontNode) { Node* temp = frontNode; frontNode = frontNode->next; delete temp; } }
     void enqueue(ServiceRequest req) {
         Node* temp = new Node{req, nullptr};
-        if (!rearNode) {
-            frontNode = rearNode = temp;
-        } else {
-            rearNode->next = temp;
-            rearNode = temp;
-        }
+        if (!rearNode) frontNode = rearNode = temp; else { rearNode->next = temp; rearNode = temp; }
         sz++;
     }
     ServiceRequest dequeue() {
         if (!frontNode) return {0, "", "", "", ""};
-        Node* temp = frontNode;
-        ServiceRequest req = temp->data;
-        frontNode = frontNode->next;
-        if (!frontNode) {
-            rearNode = nullptr;
-        }
-        delete temp;
-        sz--;
-        return req;
+        Node* temp = frontNode; ServiceRequest req = temp->data; frontNode = frontNode->next;
+        if (!frontNode) rearNode = nullptr;
+        delete temp; sz--; return req;
     }
     bool isEmpty() { return frontNode == nullptr; }
     int size() { return sz; }
     void display() {
         if (!frontNode) { cout << "  (No pending service requests in queue)\n"; return; }
         Node* current = frontNode;
-        vector<int> w = {10, 15, 20, 30, 8}; drawLine(w);
-        printRow({"Request ID", "Citizen Name", "Location", "Description", "Urgency"}, w); drawLine(w);
+        vector<int> w = {10, 15, 20, 30, 8};
+        drawLine(w);
+        printRow({"Request ID", "Citizen Name", "Location", "Description", "Urgency"}, w);
+        drawLine(w);
         while (current) {
             ServiceRequest r = current->data;
             printRow({"#" + to_string(r.id), r.name, r.location, r.desc, r.urgency}, w);
@@ -156,6 +113,30 @@ public:
 
 struct TreeNode { WasteBin bin; TreeNode *left, *right; int height; };
 void clearTree(TreeNode* node) { if (node) { clearTree(node->left); clearTree(node->right); delete node; } }
+
+void treeInorder(TreeNode* n, vector<int>& w) {
+    if (n) {
+        treeInorder(n->left, w);
+        string s = (n->bin.wasteLevel >= 80) ? "URGENT" : ((n->bin.wasteLevel >= 50) ? "Moderate" : "Normal");
+        printRow({to_string(n->bin.id), n->bin.location, to_string((int)n->bin.wasteLevel) + "%", to_string((int)n->bin.capacity) + "L", n->bin.wasteType, s}, w);
+        treeInorder(n->right, w);
+    }
+}
+void treeCollectPreorder(TreeNode* n, string& s) {
+    if (n) {
+        s += to_string(n->bin.id) + " ";
+        treeCollectPreorder(n->left, s);
+        treeCollectPreorder(n->right, s);
+    }
+}
+void treePrintTable(TreeNode* n, vector<int>& w) {
+    if (!n) return;
+    string l = n->left ? "Bin " + to_string(n->left->bin.id) : "None";
+    string r = n->right ? "Bin " + to_string(n->right->bin.id) : "None";
+    printRow({to_string(n->bin.id), l, r}, w);
+    treePrintTable(n->left, w);
+    treePrintTable(n->right, w);
+}
 
 class BST {
 public:
@@ -184,15 +165,14 @@ public:
     void remove(int id) { root = del(root, id); }
     TreeNode* sh(TreeNode* n, int id) { return (!n || n->bin.id == id) ? n : (id < n->bin.id ? sh(n->left, id) : sh(n->right, id)); }
     WasteBin* search(int id) { TreeNode* t = sh(root, id); return t ? &(t->bin) : nullptr; }
-    void inorder(TreeNode* n, vector<int>& w) {
-        if (n) { inorder(n->left, w); string s = (n->bin.wasteLevel >= 80) ? "URGENT" : ((n->bin.wasteLevel >= 50) ? "Moderate" : "Normal");
-            printRow({to_string(n->bin.id), n->bin.location, to_string((int)n->bin.wasteLevel) + "%", to_string((int)n->bin.capacity) + "L", n->bin.wasteType, s}, w); inorder(n->right, w); }
-    }
-    void display() { if (root) { vector<int> w = {6, 22, 6, 9, 11, 9}; drawLine(w); printRow({"ID", "Location", "Fill%", "Capacity", "Type", "Status"}, w); drawLine(w); inorder(root, w); drawLine(w); } else cout << "  (empty)\n"; }
-    void collectPreorder(TreeNode* n, string& s) { if (n) { s += to_string(n->bin.id) + " "; collectPreorder(n->left, s); collectPreorder(n->right, s); } }
-    void printTreeTable(TreeNode* n, vector<int>& w) {
-        if (!n) return; string l = n->left ? "Bin " + to_string(n->left->bin.id) : "None", r = n->right ? "Bin " + to_string(n->right->bin.id) : "None";
-        printRow({to_string(n->bin.id), l, r}, w); printTreeTable(n->left, w); printTreeTable(n->right, w);
+    void display() {
+        if (!root) { cout << "  (empty)\n"; return; }
+        vector<int> w = {6, 22, 6, 9, 11, 9};
+        drawLine(w);
+        printRow({"ID", "Location", "Fill%", "Capacity", "Type", "Status"}, w);
+        drawLine(w);
+        treeInorder(root, w);
+        drawLine(w);
     }
 };
 
@@ -235,18 +215,17 @@ public:
     void remove(int id) { root = del(root, id); }
     TreeNode* sh(TreeNode* n, int id) { return (!n || n->bin.id == id) ? n : (id < n->bin.id ? sh(n->left, id) : sh(n->right, id)); }
     WasteBin* search(int id) { TreeNode* t = sh(root, id); return t ? &(t->bin) : nullptr; }
-    void inorder(TreeNode* n, vector<int>& w) {
-        if (n) { inorder(n->left, w); string s = (n->bin.wasteLevel >= 80) ? "URGENT" : ((n->bin.wasteLevel >= 50) ? "Moderate" : "Normal");
-            printRow({to_string(n->bin.id), n->bin.location, to_string((int)n->bin.wasteLevel) + "%", to_string((int)n->bin.capacity) + "L", n->bin.wasteType, s}, w); inorder(n->right, w); }
+    void display() {
+        if (!root) { cout << "  (empty)\n"; return; }
+        vector<int> w = {6, 22, 6, 9, 11, 9};
+        drawLine(w);
+        printRow({"ID", "Location", "Fill%", "Capacity", "Type", "Status"}, w);
+        drawLine(w);
+        treeInorder(root, w);
+        drawLine(w);
     }
-    void display() { if (root) { vector<int> w = {6, 22, 6, 9, 11, 9}; drawLine(w); printRow({"ID", "Location", "Fill%", "Capacity", "Type", "Status"}, w); drawLine(w); inorder(root, w); drawLine(w); } else cout << "  (empty)\n"; }
     void coll(TreeNode* n, WasteBin arr[], int& i) { if (n) { coll(n->left, arr, i); arr[i++] = n->bin; coll(n->right, arr, i); } }
     void getAll(WasteBin arr[], int& c) { c = 0; coll(root, arr, c); }
-    void collectPreorder(TreeNode* n, string& s) { if (n) { s += to_string(n->bin.id) + " "; collectPreorder(n->left, s); collectPreorder(n->right, s); } }
-    void printTreeTable(TreeNode* n, vector<int>& w) {
-        if (!n) return; string l = n->left ? "Bin " + to_string(n->left->bin.id) : "None", r = n->right ? "Bin " + to_string(n->right->bin.id) : "None";
-        printRow({to_string(n->bin.id), l, r}, w); printTreeTable(n->left, w); printTreeTable(n->right, w);
-    }
 };
 
 class VehicleHash {
@@ -266,35 +245,24 @@ public:
     ~VehicleHash() {
         for (int i = 0; i < size; i++) {
             Node* current = table[i];
-            while (current) {
-                Node* temp = current;
-                current = current->next;
-                delete temp;
-            }
+            while (current) { Node* temp = current; current = current->next; delete temp; }
         }
     }
     int getHashValue(string key) {
-        unsigned long h = 0;
-        for (size_t i = 0; i < key.length(); i++) h = (h * 31 + key[i]) % size;
+        unsigned long h = 0; for (size_t i = 0; i < key.length(); i++) h = (h * 31 + key[i]) % size;
         return (int)h;
     }
-    void insert(Vehicle v) {
-        int idx = getHashValue(v.plate);
-        Node* newNode = new Node{v, table[idx]};
-        table[idx] = newNode;
-        count++;
-    }
+    void insert(Vehicle v) { int idx = getHashValue(v.plate); table[idx] = new Node{v, table[idx]}; count++; }
     Vehicle* search(string plate) {
-        int idx = getHashValue(plate);
-        Node* current = table[idx];
-        while (current) {
-            if (current->data.plate == plate) return &(current->data);
-            current = current->next;
-        }
+        int idx = getHashValue(plate); Node* current = table[idx];
+        while (current) { if (current->data.plate == plate) return &(current->data); current = current->next; }
         return nullptr;
     }
     void displayAll() {
-        vector<int> w = {14, 18, 18, 12, 8}; drawLine(w); printRow({"Plate Number", "Driver Name", "Vehicle Type", "Status", "Zone"}, w); drawLine(w);
+        vector<int> w = {14, 18, 18, 12, 8};
+        drawLine(w);
+        printRow({"Plate Number", "Driver Name", "Vehicle Type", "Status", "Zone"}, w);
+        drawLine(w);
         for (int i = 0; i < size; i++) {
             Node* current = table[i];
             while (current) {
@@ -316,9 +284,15 @@ public:
     string getName(int idx) { return names[idx]; }
     void addEdge(int u, int v, int w) { adjList[u].push_back(Edge{v, w}); adjList[v].push_back(Edge{u, w}); }
     void showAdj() {
-        vector<int> w = {20, 50}; drawLine(w); printRow({"Source Area", "Connected Areas (Distance)"}, w); drawLine(w);
+        vector<int> w = {20, 50};
+        drawLine(w);
+        printRow({"Source Area", "Connected Areas (Distance)"}, w);
+        drawLine(w);
         for (int i = 0; i < V; i++) {
-            string conns = ""; for (size_t j = 0; j < adjList[i].size(); j++) conns += names[adjList[i][j].dest] + " (" + to_string(adjList[i][j].weight) + "km), ";
+            string conns = "";
+            for (size_t j = 0; j < adjList[i].size(); j++) {
+                conns += names[adjList[i][j].dest] + " (" + to_string(adjList[i][j].weight) + "km), ";
+            }
             if (conns.length() > 2) conns = conns.substr(0, conns.length() - 2);
             printRow({names[i], conns}, w);
         }
@@ -377,40 +351,22 @@ public:
 };
 
 void heapify(WasteBin arr[], int n, int i) {
-    int smallest = i;
-    int l = 2 * i + 1;
-    int r = 2 * i + 2;
-
-    if (l < n && getPriorityScore(arr[l]) < getPriorityScore(arr[smallest]))
-        smallest = l;
-
-    if (r < n && getPriorityScore(arr[r]) < getPriorityScore(arr[smallest]))
-        smallest = r;
-
-    if (smallest != i) {
-        swapVal(arr[i], arr[smallest]);
-        heapify(arr, n, smallest);
-    }
+    int smallest = i, l = 2 * i + 1, r = 2 * i + 2;
+    if (l < n && getPriorityScore(arr[l]) < getPriorityScore(arr[smallest])) smallest = l;
+    if (r < n && getPriorityScore(arr[r]) < getPriorityScore(arr[smallest])) smallest = r;
+    if (smallest != i) { swapVal(arr[i], arr[smallest]); heapify(arr, n, smallest); }
 }
 
 void heapSort(WasteBin arr[], int n) {
-    for (int i = n / 2 - 1; i >= 0; i--)
-        heapify(arr, n, i);
-
-    for (int i = n - 1; i > 0; i--) {
-        swapVal(arr[0], arr[i]);
-        heapify(arr, i, 0);
-    }
+    for (int i = n / 2 - 1; i >= 0; i--) heapify(arr, n, i);
+    for (int i = n - 1; i > 0; i--) { swapVal(arr[0], arr[i]); heapify(arr, i, 0); }
 }
 
 int partition(WasteBin arr[], int low, int high) {
     double pivot = getPriorityScore(arr[high]);
     int i = (low - 1);
     for (int j = low; j <= high - 1; j++) {
-        if (getPriorityScore(arr[j]) > pivot) {
-            i++;
-            swapVal(arr[i], arr[j]);
-        }
+        if (getPriorityScore(arr[j]) > pivot) swapVal(arr[++i], arr[j]);
     }
     swapVal(arr[i + 1], arr[high]);
     return (i + 1);
@@ -449,9 +405,19 @@ int linearSearch(WasteBin arr[], int n, string locKeyword) {
 AVL avl_tree; BST bst_tree; Queue request_queue; Stack action_stack; VehicleHash vehicle_hash; CityGraph* city_graph = nullptr; int nextRequestId = 6;
 
 void saveBins() {
-    ofstream out("bins.txt"); if (!out) return;
-    WasteBin tempArr[100]; int size = 0; avl_tree.getAll(tempArr, size); out << size << "\n";
-    for (int i = 0; i < size; i++) out << tempArr[i].id << "\n" << tempArr[i].location << "\n" << tempArr[i].wasteLevel << "\n" << tempArr[i].wasteType << "\n" << tempArr[i].capacity << "\n";
+    ofstream out("bins.txt");
+    if (!out) return;
+    WasteBin tempArr[100];
+    int size = 0;
+    avl_tree.getAll(tempArr, size);
+    out << size << "\n";
+    for (int i = 0; i < size; i++) {
+        out << tempArr[i].id << "\n"
+            << tempArr[i].location << "\n"
+            << tempArr[i].wasteLevel << "\n"
+            << tempArr[i].wasteType << "\n"
+            << tempArr[i].capacity << "\n";
+    }
     out.close();
 }
 void loadBins() {
@@ -464,13 +430,26 @@ void loadBins() {
             {107, "Commercial Hub", 55.0, "Hazardous", 750}, {108, "University Area", 40.0, "Recyclable", 350},
             {109, "Town Square", 83.0, "Organic", 450}, {110, "Riverside Zone", 62.0, "General", 550}
         };
-        for (int i = 0; i < 10; i++) { avl_tree.insert(bins[i]); bst_tree.insert(bins[i]); }
-        saveBins(); return;
+        for (int i = 0; i < 10; i++) {
+            avl_tree.insert(bins[i]);
+            bst_tree.insert(bins[i]);
+        }
+        saveBins();
+        return;
     }
-    int size; if (!(in >> size)) return;
+    int size;
+    if (!(in >> size)) return;
     for (int i = 0; i < size; i++) {
-        WasteBin b; in >> b.id; in.ignore(); getline(in, b.location); in >> b.wasteLevel; in.ignore(); getline(in, b.wasteType); in >> b.capacity;
-        avl_tree.insert(b); bst_tree.insert(b);
+        WasteBin b;
+        in >> b.id;
+        in.ignore();
+        getline(in, b.location);
+        in >> b.wasteLevel;
+        in.ignore();
+        getline(in, b.wasteType);
+        in >> b.capacity;
+        avl_tree.insert(b);
+        bst_tree.insert(b);
     }
     in.close();
 }
@@ -489,21 +468,36 @@ void saveVehicles() {
 void loadVehicles() {
     ifstream in("vehicles.txt");
     if (!in) {
-        vehicle_hash.insert({"GV-TRK-001", "Rajesh Kumar", "Compactor", "Available", "Central"}); vehicle_hash.insert({"GV-TRK-002", "Suresh Mehta", "Tipper", "On Route", "North"});
-        vehicle_hash.insert({"GV-TRK-003", "Amit Sharma", "Compactor", "Maintenance", "South"}); vehicle_hash.insert({"GV-RCY-001", "Priya Singh", "Recycling Van", "Available", "East"});
+        vehicle_hash.insert({"GV-TRK-001", "Rajesh Kumar", "Compactor", "Available", "Central"});
+        vehicle_hash.insert({"GV-TRK-002", "Suresh Mehta", "Tipper", "On Route", "North"});
+        vehicle_hash.insert({"GV-TRK-003", "Amit Sharma", "Compactor", "Maintenance", "South"});
+        vehicle_hash.insert({"GV-RCY-001", "Priya Singh", "Recycling Van", "Available", "East"});
         vehicle_hash.insert({"GV-RCY-002", "Deepak Verma", "Recycling Van", "On Route", "West"});
-        saveVehicles(); return;
+        saveVehicles();
+        return;
     }
-    int count; if (!(in >> count)) return; in.ignore();
+    int count;
+    if (!(in >> count)) return;
+    in.ignore();
     for (int i = 0; i < count; i++) {
-        Vehicle v; getline(in, v.plate); getline(in, v.driver); getline(in, v.type); getline(in, v.status); getline(in, v.zone); vehicle_hash.insert(v);
+        Vehicle v;
+        getline(in, v.plate);
+        getline(in, v.driver);
+        getline(in, v.type);
+        getline(in, v.status);
+        getline(in, v.zone);
+        vehicle_hash.insert(v);
     }
     in.close();
 }
 void saveRequests() {
-    ofstream out("requests.txt"); if (!out) return; int count = request_queue.size(); out << count << "\n";
+    ofstream out("requests.txt");
+    if (!out) return;
+    int count = request_queue.size();
+    out << count << "\n";
     for (int i = 0; i < count; i++) {
-        ServiceRequest r = request_queue.dequeue(); out << r.id << "\n" << r.name << "\n" << r.location << "\n" << r.desc << "\n" << r.urgency << "\n";
+        ServiceRequest r = request_queue.dequeue();
+        out << r.id << "\n" << r.name << "\n" << r.location << "\n" << r.desc << "\n" << r.urgency << "\n";
         request_queue.enqueue(r);
     }
     out.close();
@@ -511,25 +505,52 @@ void saveRequests() {
 void loadRequests() {
     ifstream in("requests.txt");
     if (!in) {
-        request_queue.enqueue({1, "Suresh Mehta", "Main Street", "Overflowing bin near bus stop", "High"}); request_queue.enqueue({2, "Anita Desai", "Park Avenue", "Missed collection Thursday", "Medium"});
-        request_queue.enqueue({3, "Vikram Joshi", "Industrial Area", "Hazardous waste leakage", "High"}); request_queue.enqueue({4, "Meera Patel", "Residential North", "Request new recycling bin", "Low"});
+        request_queue.enqueue({1, "Suresh Mehta", "Main Street", "Overflowing bin near bus stop", "High"});
+        request_queue.enqueue({2, "Anita Desai", "Park Avenue", "Missed collection Thursday", "Medium"});
+        request_queue.enqueue({3, "Vikram Joshi", "Industrial Area", "Hazardous waste leakage", "High"});
+        request_queue.enqueue({4, "Meera Patel", "Residential North", "Request new recycling bin", "Low"});
         request_queue.enqueue({5, "Karan Gupta", "Market District", "Foul odour from bins", "Medium"});
-        saveRequests(); return;
+        saveRequests();
+        return;
     }
     int count; if (!(in >> count)) return; int maxId = 5;
     for (int i = 0; i < count; i++) {
         ServiceRequest r; in >> r.id; in.ignore(); getline(in, r.name); getline(in, r.location); getline(in, r.desc); getline(in, r.urgency);
         request_queue.enqueue(r); if (r.id > maxId) maxId = r.id;
     }
-    nextRequestId = maxId + 1; in.close();
+    nextRequestId = maxId + 1;
+    in.close();
 }
 void loadSampleData() {
-    loadBins(); loadVehicles(); loadRequests();
+    loadBins();
+    loadVehicles();
+    loadRequests();
+    
     city_graph = new CityGraph(10);
-    city_graph->setName(0, "Central Depot"); city_graph->setName(1, "Main Street"); city_graph->setName(2, "Park Avenue"); city_graph->setName(3, "Industrial Area"); city_graph->setName(4, "Residential North");
-    city_graph->setName(5, "Residential South"); city_graph->setName(6, "Market District"); city_graph->setName(7, "Commercial Hub"); city_graph->setName(8, "University Area"); city_graph->setName(9, "Recycling Center");
-    city_graph->addEdge(0, 1, 2); city_graph->addEdge(0, 2, 3); city_graph->addEdge(1, 3, 4); city_graph->addEdge(1, 4, 2); city_graph->addEdge(2, 5, 3); city_graph->addEdge(2, 6, 5);
-    city_graph->addEdge(3, 7, 1); city_graph->addEdge(4, 7, 3); city_graph->addEdge(5, 8, 2); city_graph->addEdge(6, 9, 4); city_graph->addEdge(7, 8, 6); city_graph->addEdge(8, 9, 3);
+    city_graph->setName(0, "Central Depot");
+    city_graph->setName(1, "Main Street");
+    city_graph->setName(2, "Park Avenue");
+    city_graph->setName(3, "Industrial Area");
+    city_graph->setName(4, "Residential North");
+    city_graph->setName(5, "Residential South");
+    city_graph->setName(6, "Market District");
+    city_graph->setName(7, "Commercial Hub");
+    city_graph->setName(8, "University Area");
+    city_graph->setName(9, "Recycling Center");
+
+    city_graph->addEdge(0, 1, 2);
+    city_graph->addEdge(0, 2, 3);
+    city_graph->addEdge(1, 3, 4);
+    city_graph->addEdge(1, 4, 2);
+    city_graph->addEdge(2, 5, 3);
+    city_graph->addEdge(2, 6, 5);
+    city_graph->addEdge(3, 7, 1);
+    city_graph->addEdge(4, 7, 3);
+    city_graph->addEdge(5, 8, 2);
+    city_graph->addEdge(6, 9, 4);
+    city_graph->addEdge(7, 8, 6);
+    city_graph->addEdge(8, 9, 3);
+
     action_stack.push("System initialized");
 }
 
@@ -807,12 +828,12 @@ void systemPerformance() {
     int choice = readChoice();
     if (choice == 1) {
         cout << "\n  === Primary Storage Status (AVL Tree) ===\n"; avl_tree.display();
-        string pStr = ""; avl_tree.collectPreorder(avl_tree.root, pStr); cout << "\n  Preorder Traversal: " << pStr << "\n\n  === AVL Node Connections Table ===\n";
-        vector<int> w = {10, 15, 15}; drawLine(w); printRow({"Node ID", "Left Child", "Right Child"}, w); drawLine(w); avl_tree.printTreeTable(avl_tree.root, w); drawLine(w);
+        string pStr = ""; treeCollectPreorder(avl_tree.root, pStr); cout << "\n  Preorder Traversal: " << pStr << "\n\n  === AVL Node Connections Table ===\n";
+        vector<int> w = {10, 15, 15}; drawLine(w); printRow({"Node ID", "Left Child", "Right Child"}, w); drawLine(w); treePrintTable(avl_tree.root, w); drawLine(w);
     } else if (choice == 2) {
         cout << "\n  === Backup Storage Status (BST Tree) ===\n"; bst_tree.display();
-        string pStr = ""; bst_tree.collectPreorder(bst_tree.root, pStr); cout << "\n  Preorder Traversal: " << pStr << "\n\n  === BST Node Connections Table ===\n";
-        vector<int> w = {10, 15, 15}; drawLine(w); printRow({"Node ID", "Left Child", "Right Child"}, w); drawLine(w); bst_tree.printTreeTable(bst_tree.root, w); drawLine(w);
+        string pStr = ""; treeCollectPreorder(bst_tree.root, pStr); cout << "\n  Preorder Traversal: " << pStr << "\n\n  === BST Node Connections Table ===\n";
+        vector<int> w = {10, 15, 15}; drawLine(w); printRow({"Node ID", "Left Child", "Right Child"}, w); drawLine(w); treePrintTable(bst_tree.root, w); drawLine(w);
     } else if (choice == 3) {
         cout << "\n  === Storage Comparison ===\n";
         vector<int> w = {25, 15}; drawLine(w); printRow({"Storage Structure", "Tree Height"}, w); drawLine(w);
