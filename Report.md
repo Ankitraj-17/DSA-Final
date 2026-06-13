@@ -37,71 +37,9 @@ The entire project has been synthesized into a monolithic, Object-Oriented `main
 
 ---
 
-## 4. 20 Viva Questions with Answers
-
-**Q1: What is the primary advantage of using a Hash Table for Asset Identification over an Array?**
-A: An array takes $O(N)$ time to search for a specific asset ID. A Hash Table computes an index directly from the ID and accomplishes this lookup in $O(1)$ average time.
-
-**Q2: Why use an AVL Tree instead of a standard Binary Search Tree (BST) for the Waste Database?**
-A: A standard BST can become skewed (like a linked list) if data is inserted in a sorted order, degrading search time to $O(N)$. An AVL tree automatically balances itself to strictly maintain $O(\log N)$ operations.
-
-**Q3: How do Sorting Algorithms maintain the collection schedule priority?**
-A: Algorithms like Quick Sort or Merge Sort reorder the array of zones based on their specific waste volume score, allowing the fleet to always address the highest volume zones efficiently in $O(N \log N)$ time.
-
-**Q4: Can we detect duplicate service requests using an Array instead of a Hash Table?**
-A: Yes, but it's inefficient. Searching an unsorted array takes $O(N)$ time. A Hash Table accomplishes existence checks in $O(1)$ average time.
-
-**Q5: Why is an Adjacency List better than an Adjacency Matrix for the City Map Graph?**
-A: Road networks form a "sparse" graph (most intersections only connect to 3 or 4 roads). A matrix requires $O(V^2)$ space, while an adjacency list requires $O(V + E)$ space, saving massive amounts of memory.
-
-**Q6: Explain how Dijkstra's Algorithm finds the optimal collection route.**
-A: Dijkstra's explores paths starting from the depot using a priority queue to always extend the shortest known path. It mathematically guarantees finding the absolute minimum distance to the target neighborhood.
-
-**Q7: Why use Breadth-First Search (BFS) in the Graph?**
-A: BFS explores all neighbors at the current depth before moving deeper. If edge weights are uniform (e.g. block-by-block routing), BFS guarantees finding the route with the fewest turns or intersections.
-
-**Q8: Explain the logic behind your Queue for Service Requests.**
-A: It enforces FIFO (First-In-First-Out) behavior. When citizens log overflow bins, requests must be processed in the exact order they arrive to maintain fairness and sequential consistency.
-
-**Q9: What happens if two assets have the same Hash ID?**
-A: This is a collision. Our Hash Table handles it (via chaining or probing), but ideally, asset IDs are unique. If the system detects it via an `unordered_set` or map, it halts the registration and flags it as a duplicate in $O(1)$ time.
-
-**Q10: What does the Recovery Procedure (Stack) achieve?**
-A: It implements an "Undo" feature. By pushing actions (like vehicle reassignment) onto a stack, the last action pushed is the first one popped, which perfectly mirrors operator undo expectations.
-
-**Q11: Why is Binary Search chosen for Record Retrieval?**
-A: Historical records are kept chronologically sorted. Binary Search divides the search space in half each step, finding records in $O(\log N)$ rather than checking every record in $O(N)$ linear time.
-
-**Q12: In Graph traversal, what is the role of the 'visited' set?**
-A: To prevent infinite loops. City streets often have cycles (e.g. roundabouts or city blocks). Marking an intersection as 'visited' ensures BFS or Dijkstra's doesn't process the same intersection endlessly.
-
-**Q13: How does the system handle an empty Stack during an Undo request?**
-A: The system checks if the Stack is empty (`stack.empty()`) in $O(1)$ time before attempting to pop. If empty, it alerts the user that there are no actions to undo, preventing a segmentation fault.
-
-**Q14: Are classes inside main.cpp good practice for production?**
-A: No. In production, classes should be separated into `.h` headers and `.cpp` implementation files for modularity, reusability, and faster compilation. However, for this specific assignment requirement, they were consolidated.
-
-**Q15: How does std::priority_queue know to act as a Min Heap for Dijkstra's?**
-A: We provide a custom comparator struct (e.g., `std::greater<>`) that overloads the `operator()`. By returning `a > b`, we instruct the queue to bubble the smallest distances to the top.
-
-**Q16: What is the time complexity of building the City Map Graph?**
-A: Adding a street/edge to the `unordered_map`-based Adjacency List takes average $O(1)$ time. Thus, loading $E$ roads takes $O(E)$ time.
-
-**Q17: Why do we use Merge Sort or Quick Sort instead of Bubble Sort for scheduling?**
-A: Bubble Sort takes $O(N^2)$ time, which is vastly too slow for evaluating thousands of city zones. Quick Sort or Merge Sort handle large datasets efficiently in $O(N \log N)$ time.
-
-**Q18: What is the space complexity of the StackManager?**
-A: $O(A \times S)$ where $A$ is the number of stored string actions, and $S$ is the average length of the action string.
-
-**Q19: How are the 20 sample collection points processed on startup?**
-A: They are hardcoded in a `populateSampleData()` function, pushed through the registration method, sorted into the Database (AVL Tree), and mapped to intersections in the City Map Graph.
-
-**Q20: Can you change the sorting criteria for zones?**
-A: Yes. If we wanted to prioritize by "longest time since last pickup" instead of "highest waste volume", we simply update the comparator logic passed to our sorting algorithm.
-
 ---
 
-## 5. Step-by-Step Explanation of Program Flow
+## 4. Step-by-Step Explanation of Program Flow
 
 1. **Initialization:**
    * The program starts in `main()`, which instantiates the `SmartWasteManagement` facade.
