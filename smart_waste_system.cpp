@@ -138,6 +138,19 @@ void treePrintTable(TreeNode* n, vector<int>& w) {
     treePrintTable(n->right, w);
 }
 
+TreeNode* findMinNode(TreeNode* n) { while (n && n->left) n = n->left; return n; }
+TreeNode* searchNode(TreeNode* n, int id) { return (!n || n->bin.id == id) ? n : (id < n->bin.id ? searchNode(n->left, id) : searchNode(n->right, id)); }
+WasteBin* searchBin(TreeNode* root, int id) { TreeNode* t = searchNode(root, id); return t ? &(t->bin) : nullptr; }
+void displayTree(TreeNode* root) {
+    if (!root) { cout << "  (empty)\n"; return; }
+    vector<int> w = {6, 22, 6, 9, 11, 9};
+    drawLine(w);
+    printRow({"ID", "Location", "Fill%", "Capacity", "Type", "Status"}, w);
+    drawLine(w);
+    treeInorder(root, w);
+    drawLine(w);
+}
+
 class BST {
 public:
     TreeNode* root = nullptr; int count = 0;
@@ -151,29 +164,17 @@ public:
         n->height = 1 + maxVal(getH(n->left), getH(n->right)); return n;
     }
     void insert(WasteBin b) { root = ins(root, b); }
-    TreeNode* findMin(TreeNode* n) { while (n && n->left) n = n->left; return n; }
     TreeNode* del(TreeNode* n, int id) {
         if (!n) return nullptr;
         if (id < n->bin.id) n->left = del(n->left, id);
         else if (id > n->bin.id) n->right = del(n->right, id);
         else {
             if (!n->left || !n->right) { TreeNode* temp = n->left ? n->left : n->right; delete n; count--; return temp; }
-            TreeNode* temp = findMin(n->right); n->bin = temp->bin; n->right = del(n->right, temp->bin.id);
+            TreeNode* temp = findMinNode(n->right); n->bin = temp->bin; n->right = del(n->right, temp->bin.id);
         }
         if (n) n->height = 1 + maxVal(getH(n->left), getH(n->right)); return n;
     }
     void remove(int id) { root = del(root, id); }
-    TreeNode* sh(TreeNode* n, int id) { return (!n || n->bin.id == id) ? n : (id < n->bin.id ? sh(n->left, id) : sh(n->right, id)); }
-    WasteBin* search(int id) { TreeNode* t = sh(root, id); return t ? &(t->bin) : nullptr; }
-    void display() {
-        if (!root) { cout << "  (empty)\n"; return; }
-        vector<int> w = {6, 22, 6, 9, 11, 9};
-        drawLine(w);
-        printRow({"ID", "Location", "Fill%", "Capacity", "Type", "Status"}, w);
-        drawLine(w);
-        treeInorder(root, w);
-        drawLine(w);
-    }
 };
 
 class AVL {
@@ -200,30 +201,18 @@ public:
         return bal(n);
     }
     void insert(WasteBin b) { root = ins(root, b); }
-    TreeNode* findMin(TreeNode* n) { while (n && n->left) n = n->left; return n; }
     TreeNode* del(TreeNode* n, int id) {
         if (!n) return nullptr;
         if (id < n->bin.id) n->left = del(n->left, id);
         else if (id > n->bin.id) n->right = del(n->right, id);
         else {
             if (!n->left || !n->right) { TreeNode* temp = n->left ? n->left : n->right; delete n; count--; return temp; }
-            TreeNode* temp = findMin(n->right); n->bin = temp->bin; n->right = del(n->right, temp->bin.id);
+            TreeNode* temp = findMinNode(n->right); n->bin = temp->bin; n->right = del(n->right, temp->bin.id);
         }
         if (!n) return nullptr;
         return bal(n);
     }
     void remove(int id) { root = del(root, id); }
-    TreeNode* sh(TreeNode* n, int id) { return (!n || n->bin.id == id) ? n : (id < n->bin.id ? sh(n->left, id) : sh(n->right, id)); }
-    WasteBin* search(int id) { TreeNode* t = sh(root, id); return t ? &(t->bin) : nullptr; }
-    void display() {
-        if (!root) { cout << "  (empty)\n"; return; }
-        vector<int> w = {6, 22, 6, 9, 11, 9};
-        drawLine(w);
-        printRow({"ID", "Location", "Fill%", "Capacity", "Type", "Status"}, w);
-        drawLine(w);
-        treeInorder(root, w);
-        drawLine(w);
-    }
     void coll(TreeNode* n, WasteBin arr[], int& i) { if (n) { coll(n->left, arr, i); arr[i++] = n->bin; coll(n->right, arr, i); } }
     void getAll(WasteBin arr[], int& c) { c = 0; coll(root, arr, c); }
 };
@@ -568,7 +557,7 @@ void printBinCard(WasteBin* ptr) {
 
 void showBinDatabase() {
     cout << "\n  === Waste Bin Records ===\n";
-    avl_tree.display();
+    displayTree(avl_tree.root);
     cout << "  Total Bins: " << avl_tree.count << " | Primary Storage Depth: " << avl_tree.getHeight() << "\n";
     action_stack.push("Viewed waste bin records"); pressEnterToContinue();
 }
@@ -598,10 +587,14 @@ void manageBins() {
         printBinCard(&temp); action_stack.push("Inserted Bin " + to_string(id));
     } else if (choice == 3) {
         int id; cout << "\n  Enter Bin ID to search: "; cin >> id; cin.ignore();
-        WasteBin* ptr = avl_tree.search(id);
-        if (ptr) { cout << "\n  [RESULT] Bin Found:\n"; printBinCard(ptr); }
+        WasteBin tempArr[100]; int size = 0; avl_tree.getAll(tempArr, size);
+        int idx = binarySearch(tempArr, size, id);
+        if (idx != -1) {
+            cout << "\n  [RESULT] Bin Found using Binary Search on sorted records:\n";
+            printBinCard(&tempArr[idx]);
+        }
         else cout << "\n  [ALERT] Bin ID " << id << " was not found.\n";
-        action_stack.push("Searched Bin " + to_string(id));
+        action_stack.push("Binary searched Bin " + to_string(id));
     } else if (choice == 4) {
         string keyword; cout << "\n  Enter location keyword: "; getline(cin, keyword);
         WasteBin tempArr[100]; int size = 0; avl_tree.getAll(tempArr, size);
@@ -611,7 +604,7 @@ void manageBins() {
         action_stack.push("Searched for location: " + keyword);
     } else if (choice == 5) {
         int id; cout << "\n  Enter Bin ID to delete: "; cin >> id; cin.ignore();
-        if (avl_tree.search(id)) {
+        if (searchBin(avl_tree.root, id)) {
             avl_tree.remove(id); bst_tree.remove(id); saveBins();
             cout << "\n  [SUCCESS] Bin " << id << " removed successfully.\n";
             action_stack.push("Deleted Bin " + to_string(id));
@@ -623,8 +616,19 @@ void manageBins() {
 void collectionSchedule() {
     WasteBin tempArr[100]; int size = 0; avl_tree.getAll(tempArr, size);
     if (size == 0) { cout << "  No bins available.\n"; pressEnterToContinue(); return; }
+    WasteBin quickArr[100];
+    for (int i = 0; i < size; i++) quickArr[i] = tempArr[i];
     heapSort(tempArr, size);
+    quickSort(quickArr, 0, size - 1);
+    bool quickSortMatched = true;
+    for (int i = 0; i < size; i++) {
+        if (tempArr[i].id != quickArr[i].id) {
+            quickSortMatched = false;
+            break;
+        }
+    }
     cout << "\n  === Collection Priority List ===\n";
+    cout << "  Sorting Engine: Heap Sort | Quick Sort Cross-Check: " << (quickSortMatched ? "Matched" : "Different tie order") << "\n";
     vector<int> w = {10, 8, 22, 6, 17}; drawLine(w);
     printRow({"Priority", "Bin ID", "Location", "Fill", "Action Required"}, w); drawLine(w);
     for (int i = 0; i < size; i++) {
@@ -805,8 +809,9 @@ void complexityAnalysis() {
     printRow({"Vehicle plate lookup", "O(1) average", "O(1)"}, w);
     printRow({"Recovery log operation", "O(1)", "O(1)"}, w);
     printRow({"Service request handling", "O(1)", "O(1)"}, w);
-    printRow({"Collection priority list", "O(N log N)", "O(1)"}, w);
-    printRow({"Search by bin ID", "O(log N)", "O(1)"}, w);
+    printRow({"Heap sort scheduling", "O(N log N)", "O(1)"}, w);
+    printRow({"Quick sort validation", "O(N log N) avg", "O(log N)"}, w);
+    printRow({"Binary search by ID", "O(log N)", "O(1)"}, w);
     printRow({"Search by location", "O(N)", "O(1)"}, w);
     printRow({"Area coverage check", "O(V + E)", "O(V)"}, w);
     printRow({"Shortest route planning", "O(V^2 + E)", "O(V)"}, w); drawLine(w);
@@ -827,11 +832,11 @@ void technicalAnalysis() {
          << "  Enter choice: ";
     int choice = readChoice();
     if (choice == 1) {
-        cout << "\n  === Primary Storage Status (AVL Tree) ===\n"; avl_tree.display();
+        cout << "\n  === Primary Storage Status (AVL Tree) ===\n"; displayTree(avl_tree.root);
         string pStr = ""; treeCollectPreorder(avl_tree.root, pStr); cout << "\n  Preorder Traversal: " << pStr << "\n\n  === AVL Node Connections Table ===\n";
         vector<int> w = {10, 15, 15}; drawLine(w); printRow({"Node ID", "Left Child", "Right Child"}, w); drawLine(w); treePrintTable(avl_tree.root, w); drawLine(w);
     } else if (choice == 2) {
-        cout << "\n  === Backup Storage Status (BST Tree) ===\n"; bst_tree.display();
+        cout << "\n  === Backup Storage Status (BST Tree) ===\n"; displayTree(bst_tree.root);
         string pStr = ""; treeCollectPreorder(bst_tree.root, pStr); cout << "\n  Preorder Traversal: " << pStr << "\n\n  === BST Node Connections Table ===\n";
         vector<int> w = {10, 15, 15}; drawLine(w); printRow({"Node ID", "Left Child", "Right Child"}, w); drawLine(w); treePrintTable(bst_tree.root, w); drawLine(w);
     } else if (choice == 3) {
