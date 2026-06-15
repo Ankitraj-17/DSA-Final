@@ -1,9 +1,4 @@
 5
-2
-Anita Desai
-Park Avenue
-Missed collection Thursday
-Medium
 3
 Vikram Joshi
 Industrial Area
@@ -24,3 +19,8 @@ aa
 aa
 ss
 low
+7
+Rajesh Sen
+Main Street
+Bin overflowed at block 4
+High
