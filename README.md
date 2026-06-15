@@ -46,34 +46,29 @@ The smart waste platform is designed as an interactive command-line dashboard th
 
 ### Architecture Diagram
 
-```text
-                +---------------------------------+
-                |      User Interface (CLI)       |
-                +---------------------------------+
-                                 |
-           +---------------------+---------------------+
-           |                     |                     |
-           v                     v                     v
- +------------------+  +-------------------+ +-------------------+
- | Citizen Services |  | Fleet Management  | | Waste Bin Data    |
- | (Custom Queue)   |  | (Custom Hash Map) | | (AVL / BST Trees) |
- +------------------+  +-------------------+ +-------------------+
-           |                     |                     |
-           +---------------------+---------------------+
-                                 |
-                                 v
-                +---------------------------------+
-                |   Central Processing Engine     |
-                |   - Heap Sort (Priorities)      |
-                |   - Dijkstra's (Routing Graph)  |
-                |   - Binary Search (Lookups)     |
-                +---------------------------------+
-                                 |
-                                 v
-                +---------------------------------+
-                |    Operational Recovery Log     |
-                |    (Custom Linked-List Stack)   |
-                +---------------------------------+
+```mermaid
+graph TD
+    A[User Interface CLI Gateway] --> B[Unified CLI Menu Router]
+
+    B --> C[Citizen Services Subsystem]
+    B --> D[Fleet Management Subsystem]
+    B --> E[Waste Bin Data Subsystem]
+    B --> F[Central Processing Subsystem]
+    B --> G[System Integrity Subsystem]
+
+    C --> C1[Service Requests - Custom Queue]
+    
+    D --> D1[Asset Tracking - Hash Table with Chaining]
+    
+    E --> E1[Primary Storage - AVL Tree]
+    E --> E2[Backup Storage - BST]
+    
+    F --> F1[Prioritization Engine - Heap Sort & Quick Sort]
+    F --> F2[Route Optimization - Dijkstra's Algorithm]
+    F --> F3[Network Mapping - BFS & DFS Graph]
+    F --> F4[Record Lookup - Binary Search]
+
+    G --> G1[Operational Recovery - Custom Linked-List Stack]
 ```
 
 ---
