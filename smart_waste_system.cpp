@@ -1,32 +1,13 @@
 #include <iostream>
 #include <string>
-#include <fstream>
 #include <vector>
 #include <cctype>
+#include <algorithm>
 using namespace std;
 
-// Custom utility helpers replacing <algorithm> functions
-template <typename T>
-T maxVal(T a, T b) { return (a > b) ? a : b; }
-
-template <typename T>
-void swapVal(T& a, T& b) {
-    T temp = a;
-    a = b;
-    b = temp;
-}
-
-struct WasteBin {
-    int id;
-    string location;
-    double wasteLevel; // 0 to 100
-    string wasteType;  // Organic, General, Recyclable, Hazardous
-    double capacity;   // Liters
-};
+#include "sample_data.h"
 
 double getPriorityScore(WasteBin b) { return b.wasteLevel * (b.capacity / 100.0); }
-struct Vehicle { string plate, driver, type, status, zone; };
-struct ServiceRequest { int id; string name, location, desc, urgency; };
 
 int readChoice() {
     int val = 0;
@@ -48,7 +29,22 @@ void drawLine(const vector<int>& widths) {
 void printRow(const vector<string>& cols, const vector<int>& widths) {
     cout << "  |"; for (size_t i = 0; i < cols.size(); i++) cout << " " << pad(cols[i], widths[i]) << " |"; cout << "\n";
 }
+void printTableHeader(const vector<string>& cols, const vector<int>& widths) {
+    drawLine(widths); printRow(cols, widths); drawLine(widths);
+}
 
+string getPriorityStatus(double level) {
+    return (level >= 80) ? "URGENT" : ((level >= 50) ? "Moderate" : "Normal");
+}
+string getActionRequired(double level) {
+    return (level >= 80) ? "Collect Now" : ((level >= 50) ? "Schedule Soon" : "Routine Check");
+}
+
+// ============================================================================
+// SECTION 1: CUSTOM DATA STRUCTURES (LINEAR)
+// ============================================================================
+// Stack: Used to maintain the Recovery Log (LIFO). 
+// Keeps track of the most recent actions so they can be reviewed or reversed.
 class Stack {
     struct Node { string data; Node* next; };
     Node* topNode = nullptr; int sz = 0;
@@ -66,9 +62,7 @@ public:
         Node* current = topNode;
         int i = 1;
         vector<int> w = {5, 55};
-        drawLine(w);
-        printRow({"No.", "Action Description"}, w);
-        drawLine(w);
+        printTableHeader({"No.", "Action Description"}, w);
         while (current) {
             printRow({to_string(i++), current->data}, w);
             current = current->next;
@@ -77,6 +71,8 @@ public:
     }
 };
 
+// Queue: Used for managing Citizen Service Requests (FIFO).
+// Ensures that requests are processed in the order they were received.
 class Queue {
     struct Node { ServiceRequest data; Node* next; };
     Node *frontNode = nullptr, *rearNode = nullptr; int sz = 0;
@@ -99,9 +95,7 @@ public:
         if (!frontNode) { cout << "  (No pending service requests in queue)\n"; return; }
         Node* current = frontNode;
         vector<int> w = {10, 15, 20, 30, 8};
-        drawLine(w);
-        printRow({"Request ID", "Citizen Name", "Location", "Description", "Urgency"}, w);
-        drawLine(w);
+        printTableHeader({"Request ID", "Citizen Name", "Location", "Description", "Urgency"}, w);
         while (current) {
             ServiceRequest r = current->data;
             printRow({"#" + to_string(r.id), r.name, r.location, r.desc, r.urgency}, w);
@@ -111,13 +105,17 @@ public:
     }
 };
 
+// ============================================================================
+// SECTION 2: TREES (HIERARCHICAL STORAGE FOR WASTE BINS)
+// ============================================================================
+// TreeNode: Shared node structure for both BST and AVL trees.
 struct TreeNode { WasteBin bin; TreeNode *left, *right; int height; };
 void clearTree(TreeNode* node) { if (node) { clearTree(node->left); clearTree(node->right); delete node; } }
 
 void treeInorder(TreeNode* n, vector<int>& w) {
     if (n) {
         treeInorder(n->left, w);
-        string s = (n->bin.wasteLevel >= 80) ? "URGENT" : ((n->bin.wasteLevel >= 50) ? "Moderate" : "Normal");
+        string s = getPriorityStatus(n->bin.wasteLevel);
         printRow({to_string(n->bin.id), n->bin.location, to_string((int)n->bin.wasteLevel) + "%", to_string((int)n->bin.capacity) + "L", n->bin.wasteType, s}, w);
         treeInorder(n->right, w);
     }
@@ -144,24 +142,24 @@ WasteBin* searchBin(TreeNode* root, int id) { TreeNode* t = searchNode(root, id)
 void displayTree(TreeNode* root) {
     if (!root) { cout << "  (empty)\n"; return; }
     vector<int> w = {6, 22, 6, 9, 11, 9};
-    drawLine(w);
-    printRow({"ID", "Location", "Fill%", "Capacity", "Type", "Status"}, w);
-    drawLine(w);
+    printTableHeader({"ID", "Location", "Fill%", "Capacity", "Type", "Status"}, w);
     treeInorder(root, w);
     drawLine(w);
 }
 
+// Binary Search Tree (BST): Used as backup storage for Waste Bins.
+// Provides basic O(log N) average time complexity for insertions and deletions.
 class BST {
 public:
     TreeNode* root = nullptr; int count = 0;
     ~BST() { clearTree(root); }
-    int getH(TreeNode* n) { return n ? 1 + maxVal(getH(n->left), getH(n->right)) : 0; }
+    int getH(TreeNode* n) { return n ? 1 + max(getH(n->left), getH(n->right)) : 0; }
     int getHeight() { return getH(root); }
     TreeNode* ins(TreeNode* n, WasteBin b) {
         if (!n) { count++; return new TreeNode{b, nullptr, nullptr, 1}; }
         if (b.id < n->bin.id) n->left = ins(n->left, b);
         else if (b.id > n->bin.id) n->right = ins(n->right, b);
-        n->height = 1 + maxVal(getH(n->left), getH(n->right)); return n;
+        n->height = 1 + max(getH(n->left), getH(n->right)); return n;
     }
     void insert(WasteBin b) { root = ins(root, b); }
     TreeNode* del(TreeNode* n, int id) {
@@ -172,11 +170,13 @@ public:
             if (!n->left || !n->right) { TreeNode* temp = n->left ? n->left : n->right; delete n; count--; return temp; }
             TreeNode* temp = findMinNode(n->right); n->bin = temp->bin; n->right = del(n->right, temp->bin.id);
         }
-        if (n) n->height = 1 + maxVal(getH(n->left), getH(n->right)); return n;
+        if (n) n->height = 1 + max(getH(n->left), getH(n->right)); return n;
     }
     void remove(int id) { root = del(root, id); }
 };
 
+// AVL Tree: Used as primary storage for Waste Bins.
+// Self-balancing binary search tree ensuring strictly O(log N) complexity.
 class AVL {
 public:
     TreeNode* root = nullptr; int count = 0;
@@ -184,7 +184,7 @@ public:
     int getH(TreeNode* n) { return n ? n->height : 0; }
     int getHeight() { return getH(root); }
     int getBF(TreeNode* n) { return n ? getH(n->left) - getH(n->right) : 0; }
-    void updH(TreeNode* n) { if (n) n->height = 1 + maxVal(getH(n->left), getH(n->right)); }
+    void updH(TreeNode* n) { if (n) n->height = 1 + max(getH(n->left), getH(n->right)); }
     TreeNode* rotR(TreeNode* y) { TreeNode* x = y->left, *T2 = x->right; x->right = y; y->left = T2; updH(y); updH(x); return x; }
     TreeNode* rotL(TreeNode* x) { TreeNode* y = x->right, *T2 = y->left; y->left = x; x->right = T2; updH(x); updH(y); return y; }
     TreeNode* bal(TreeNode* n) {
@@ -213,10 +213,14 @@ public:
         return bal(n);
     }
     void remove(int id) { root = del(root, id); }
-    void coll(TreeNode* n, WasteBin arr[], int& i) { if (n) { coll(n->left, arr, i); arr[i++] = n->bin; coll(n->right, arr, i); } }
-    void getAll(WasteBin arr[], int& c) { c = 0; coll(root, arr, c); }
+    void coll(TreeNode* n, vector<WasteBin>& v) { if (n) { coll(n->left, v); v.push_back(n->bin); coll(n->right, v); } }
+    vector<WasteBin> getAll() { vector<WasteBin> v; coll(root, v); return v; }
 };
 
+// ============================================================================
+// SECTION 3: HASHING (VEHICLE MANAGEMENT)
+// ============================================================================
+// Hash Table with Chaining: Used for O(1) average time lookups of Vehicles.
 class VehicleHash {
 public:
     struct Node {
@@ -249,9 +253,7 @@ public:
     }
     void displayAll() {
         vector<int> w = {14, 18, 18, 12, 8};
-        drawLine(w);
-        printRow({"Plate Number", "Driver Name", "Vehicle Type", "Status", "Zone"}, w);
-        drawLine(w);
+        printTableHeader({"Plate Number", "Driver Name", "Vehicle Type", "Status", "Zone"}, w);
         for (int i = 0; i < size; i++) {
             Node* current = table[i];
             while (current) {
@@ -264,6 +266,11 @@ public:
     }
 };
 
+// ============================================================================
+// SECTION 4: GRAPHS (CITY ROUTE OPTIMIZATION)
+// ============================================================================
+// Graph using Adjacency List: Represents city areas and roads.
+// Supports BFS for reachability, DFS for coverage, and Dijkstra for shortest paths.
 struct Edge { int dest, weight; };
 class CityGraph {
 public:
@@ -274,9 +281,7 @@ public:
     void addEdge(int u, int v, int w) { adjList[u].push_back(Edge{v, w}); adjList[v].push_back(Edge{u, w}); }
     void showAdj() {
         vector<int> w = {20, 50};
-        drawLine(w);
-        printRow({"Source Area", "Connected Areas (Distance)"}, w);
-        drawLine(w);
+        printTableHeader({"Source Area", "Connected Areas (Distance)"}, w);
         for (int i = 0; i < V; i++) {
             string conns = "";
             for (size_t j = 0; j < adjList[i].size(); j++) {
@@ -333,31 +338,23 @@ public:
             if (i > 0) cout << " --(" << (dist[path[i - 1]] - dist[path[i]]) << "km)--> ";
         }
         cout << "\n\n  Total Distance: " << dist[dst] << " km\n\n  Distances from " << names[src] << " to all areas:\n";
-        vector<int> w = {22, 12}; drawLine(w); printRow({"Destination Area", "Distance"}, w); drawLine(w);
+        vector<int> w = {22, 12}; printTableHeader({"Destination Area", "Distance"}, w);
         for (int i = 0; i < V; i++) { string dStr = (dist[i] == 999999) ? "INF" : to_string(dist[i]) + " km"; printRow({names[i], dStr}, w); }
         drawLine(w);
     }
 };
 
-void heapify(WasteBin arr[], int n, int i) {
-    int smallest = i, l = 2 * i + 1, r = 2 * i + 2;
-    if (l < n && getPriorityScore(arr[l]) < getPriorityScore(arr[smallest])) smallest = l;
-    if (r < n && getPriorityScore(arr[r]) < getPriorityScore(arr[smallest])) smallest = r;
-    if (smallest != i) { swapVal(arr[i], arr[smallest]); heapify(arr, n, smallest); }
-}
-
-void heapSort(WasteBin arr[], int n) {
-    for (int i = n / 2 - 1; i >= 0; i--) heapify(arr, n, i);
-    for (int i = n - 1; i > 0; i--) { swapVal(arr[0], arr[i]); heapify(arr, i, 0); }
-}
-
+// ============================================================================
+// SECTION 5: SORTING ALGORITHMS (COLLECTION SCHEDULING)
+// ============================================================================
+// Quick Sort: Main sorting algorithm to prioritize bins by waste level (O(N log N)).
 int partition(WasteBin arr[], int low, int high) {
     double pivot = getPriorityScore(arr[high]);
     int i = (low - 1);
     for (int j = low; j <= high - 1; j++) {
-        if (getPriorityScore(arr[j]) > pivot) swapVal(arr[++i], arr[j]);
+        if (getPriorityScore(arr[j]) > pivot) swap(arr[++i], arr[j]);
     }
-    swapVal(arr[i + 1], arr[high]);
+    swap(arr[i + 1], arr[high]);
     return (i + 1);
 }
 
@@ -369,6 +366,10 @@ void quickSort(WasteBin arr[], int low, int high) {
     }
 }
 
+// ============================================================================
+// SECTION 6: SEARCHING ALGORITHMS
+// ============================================================================
+// Binary Search: O(log N) search on a sorted array of bins by ID.
 int binarySearch(WasteBin arr[], int n, int targetId) {
     int low = 0, high = n - 1;
     while (low <= high) {
@@ -385,130 +386,39 @@ string toLowerCase(string str) {
     }
     return str;
 }
+// Linear Search: O(N) search through bins to match location keywords (case-insensitive).
 int linearSearch(WasteBin arr[], int n, string locKeyword) {
     string target = toLowerCase(locKeyword);
     for (int i = 0; i < n; i++) { if (toLowerCase(arr[i].location).find(target) != string::npos) return i; }
     return -1;
 }
 
+// ============================================================================
+// SECTION 7: GLOBAL DATA INSTANCES & INITIALIZATION
+// ============================================================================
+// Global instances of core data structures driving the system.
 AVL avl_tree; BST bst_tree; Queue request_queue; Stack action_stack; VehicleHash vehicle_hash; CityGraph* city_graph = nullptr; int nextRequestId = 6;
 
-void saveBins() {
-    ofstream out("bins.txt");
-    if (!out) return;
-    WasteBin tempArr[100];
-    int size = 0;
-    avl_tree.getAll(tempArr, size);
-    out << size << "\n";
-    for (int i = 0; i < size; i++) {
-        out << tempArr[i].id << "\n"
-            << tempArr[i].location << "\n"
-            << tempArr[i].wasteLevel << "\n"
-            << tempArr[i].wasteType << "\n"
-            << tempArr[i].capacity << "\n";
-    }
-    out.close();
-}
+vector<WasteBin> getAllBins() { return avl_tree.getAll(); }
+
 void loadBins() {
-    ifstream in("bins.txt");
-    if (!in) {
-        WasteBin bins[10] = {
-            {101, "Main Street", 92.0, "Organic", 500}, {102, "Park Avenue", 45.0, "Recyclable", 300},
-            {103, "Industrial Area", 88.5, "General", 1000}, {104, "Residential North", 30.0, "Organic", 400},
-            {105, "Residential South", 76.0, "Recyclable", 400}, {106, "Market District", 95.0, "General", 600},
-            {107, "Commercial Hub", 55.0, "Hazardous", 750}, {108, "University Area", 40.0, "Recyclable", 350},
-            {109, "Town Square", 83.0, "Organic", 450}, {110, "Riverside Zone", 62.0, "General", 550}
-        };
-        for (int i = 0; i < 10; i++) {
-            avl_tree.insert(bins[i]);
-            bst_tree.insert(bins[i]);
-        }
-        saveBins();
-        return;
+    for (int i = 0; i < 10; i++) {
+        avl_tree.insert(sample_bins[i]);
+        bst_tree.insert(sample_bins[i]);
     }
-    int size;
-    if (!(in >> size)) return;
-    for (int i = 0; i < size; i++) {
-        WasteBin b;
-        in >> b.id;
-        in.ignore();
-        getline(in, b.location);
-        in >> b.wasteLevel;
-        in.ignore();
-        getline(in, b.wasteType);
-        in >> b.capacity;
-        avl_tree.insert(b);
-        bst_tree.insert(b);
-    }
-    in.close();
-}
-void saveVehicles() {
-    ofstream out("vehicles.txt"); if (!out) return; out << vehicle_hash.count << "\n";
-    for (int i = 0; i < VehicleHash::size; i++) {
-        VehicleHash::Node* current = vehicle_hash.table[i];
-        while (current) {
-            Vehicle v = current->data;
-            out << v.plate << "\n" << v.driver << "\n" << v.type << "\n" << v.status << "\n" << v.zone << "\n";
-            current = current->next;
-        }
-    }
-    out.close();
 }
 void loadVehicles() {
-    ifstream in("vehicles.txt");
-    if (!in) {
-        vehicle_hash.insert({"GV-TRK-001", "Rajesh Kumar", "Compactor", "Available", "Central"});
-        vehicle_hash.insert({"GV-TRK-002", "Suresh Mehta", "Tipper", "On Route", "North"});
-        vehicle_hash.insert({"GV-TRK-003", "Amit Sharma", "Compactor", "Maintenance", "South"});
-        vehicle_hash.insert({"GV-RCY-001", "Priya Singh", "Recycling Van", "Available", "East"});
-        vehicle_hash.insert({"GV-RCY-002", "Deepak Verma", "Recycling Van", "On Route", "West"});
-        saveVehicles();
-        return;
+    for (int i = 0; i < 5; i++) {
+        vehicle_hash.insert(sample_vehicles[i]);
     }
-    int count;
-    if (!(in >> count)) return;
-    in.ignore();
-    for (int i = 0; i < count; i++) {
-        Vehicle v;
-        getline(in, v.plate);
-        getline(in, v.driver);
-        getline(in, v.type);
-        getline(in, v.status);
-        getline(in, v.zone);
-        vehicle_hash.insert(v);
-    }
-    in.close();
-}
-void saveRequests() {
-    ofstream out("requests.txt");
-    if (!out) return;
-    int count = request_queue.size();
-    out << count << "\n";
-    for (int i = 0; i < count; i++) {
-        ServiceRequest r = request_queue.dequeue();
-        out << r.id << "\n" << r.name << "\n" << r.location << "\n" << r.desc << "\n" << r.urgency << "\n";
-        request_queue.enqueue(r);
-    }
-    out.close();
 }
 void loadRequests() {
-    ifstream in("requests.txt");
-    if (!in) {
-        request_queue.enqueue({1, "Suresh Mehta", "Main Street", "Overflowing bin near bus stop", "High"});
-        request_queue.enqueue({2, "Anita Desai", "Park Avenue", "Missed collection Thursday", "Medium"});
-        request_queue.enqueue({3, "Vikram Joshi", "Industrial Area", "Hazardous waste leakage", "High"});
-        request_queue.enqueue({4, "Meera Patel", "Residential North", "Request new recycling bin", "Low"});
-        request_queue.enqueue({5, "Karan Gupta", "Market District", "Foul odour from bins", "Medium"});
-        saveRequests();
-        return;
-    }
-    int count; if (!(in >> count)) return; int maxId = 5;
-    for (int i = 0; i < count; i++) {
-        ServiceRequest r; in >> r.id; in.ignore(); getline(in, r.name); getline(in, r.location); getline(in, r.desc); getline(in, r.urgency);
-        request_queue.enqueue(r); if (r.id > maxId) maxId = r.id;
+    int maxId = 0;
+    for (int i = 0; i < 5; i++) {
+        request_queue.enqueue(sample_requests[i]);
+        if (sample_requests[i].id > maxId) maxId = sample_requests[i].id;
     }
     nextRequestId = maxId + 1;
-    in.close();
 }
 void loadSampleData() {
     loadBins();
@@ -516,29 +426,12 @@ void loadSampleData() {
     loadRequests();
     
     city_graph = new CityGraph(10);
-    city_graph->setName(0, "Central Depot");
-    city_graph->setName(1, "Main Street");
-    city_graph->setName(2, "Park Avenue");
-    city_graph->setName(3, "Industrial Area");
-    city_graph->setName(4, "Residential North");
-    city_graph->setName(5, "Residential South");
-    city_graph->setName(6, "Market District");
-    city_graph->setName(7, "Commercial Hub");
-    city_graph->setName(8, "University Area");
-    city_graph->setName(9, "Recycling Center");
-
-    city_graph->addEdge(0, 1, 2);
-    city_graph->addEdge(0, 2, 3);
-    city_graph->addEdge(1, 3, 4);
-    city_graph->addEdge(1, 4, 2);
-    city_graph->addEdge(2, 5, 3);
-    city_graph->addEdge(2, 6, 5);
-    city_graph->addEdge(3, 7, 1);
-    city_graph->addEdge(4, 7, 3);
-    city_graph->addEdge(5, 8, 2);
-    city_graph->addEdge(6, 9, 4);
-    city_graph->addEdge(7, 8, 6);
-    city_graph->addEdge(8, 9, 3);
+    for (int i = 0; i < 10; i++) {
+        city_graph->setName(i, sample_city_names[i]);
+    }
+    for (int i = 0; i < 12; i++) {
+        city_graph->addEdge(sample_edges[i].u, sample_edges[i].v, sample_edges[i].w);
+    }
 
     action_stack.push("System initialized");
 }
@@ -552,7 +445,7 @@ void printBinCard(WasteBin* ptr) {
          << "  Capacity: " << (int)ptr->capacity << "L\n"
          << "  Type: " << ptr->wasteType << "\n"
          << "  Current Waste: " << (int)(ptr->wasteLevel * ptr->capacity / 100.0) << "L\n"
-         << "  Priority Status: " << ((ptr->wasteLevel >= 80) ? "URGENT" : ((ptr->wasteLevel >= 50) ? "Moderate" : "Normal")) << "\n";
+         << "  Priority Status: " << getPriorityStatus(ptr->wasteLevel) << "\n";
 }
 
 void showBinDatabase() {
@@ -562,6 +455,10 @@ void showBinDatabase() {
     action_stack.push("Viewed waste bin records"); pressEnterToContinue();
 }
 
+// ============================================================================
+// SECTION 8: MENU & BUSINESS LOGIC IMPLEMENTATION
+// ============================================================================
+// Manages adding, searching, and removing bins via AVL/BST structures.
 void manageBins() {
     cout << "\n  +--------------------------------------------------+\n"
          << "  |               Waste Bin Management               |\n"
@@ -582,13 +479,13 @@ void manageBins() {
         cout << "  Enter ID: "; cin >> id; cin.ignore(); cout << "  Enter Location: "; getline(cin, loc);
         cout << "  Enter Fill Level (%): "; cin >> lvl; cout << "  Enter Type (Organic/General/Recyclable/Hazardous): "; cin >> type;
         cout << "  Enter Capacity (L): "; cin >> cap; cin.ignore();
-        WasteBin temp = {id, loc, lvl, type, cap}; avl_tree.insert(temp); bst_tree.insert(temp); saveBins();
+        WasteBin temp = {id, loc, lvl, type, cap}; avl_tree.insert(temp); bst_tree.insert(temp);
         cout << "\n  [SUCCESS] New Bin Added Successfully!\n";
         printBinCard(&temp); action_stack.push("Inserted Bin " + to_string(id));
     } else if (choice == 3) {
         int id; cout << "\n  Enter Bin ID to search: "; cin >> id; cin.ignore();
-        WasteBin tempArr[100]; int size = 0; avl_tree.getAll(tempArr, size);
-        int idx = binarySearch(tempArr, size, id);
+        vector<WasteBin> tempArr = getAllBins();
+        int idx = binarySearch(tempArr.data(), tempArr.size(), id);
         if (idx != -1) {
             cout << "\n  [RESULT] Bin Found using Binary Search on sorted records:\n";
             printBinCard(&tempArr[idx]);
@@ -597,15 +494,15 @@ void manageBins() {
         action_stack.push("Binary searched Bin " + to_string(id));
     } else if (choice == 4) {
         string keyword; cout << "\n  Enter location keyword: "; getline(cin, keyword);
-        WasteBin tempArr[100]; int size = 0; avl_tree.getAll(tempArr, size);
-        int idx = linearSearch(tempArr, size, keyword);
+        vector<WasteBin> tempArr = getAllBins();
+        int idx = linearSearch(tempArr.data(), tempArr.size(), keyword);
         if (idx != -1) { cout << "\n  [RESULT] Bin Found:\n"; printBinCard(&tempArr[idx]); }
         else cout << "\n  [ALERT] Location containing '" << keyword << "' not found.\n";
         action_stack.push("Searched for location: " + keyword);
     } else if (choice == 5) {
         int id; cout << "\n  Enter Bin ID to delete: "; cin >> id; cin.ignore();
         if (searchBin(avl_tree.root, id)) {
-            avl_tree.remove(id); bst_tree.remove(id); saveBins();
+            avl_tree.remove(id); bst_tree.remove(id);
             cout << "\n  [SUCCESS] Bin " << id << " removed successfully.\n";
             action_stack.push("Deleted Bin " + to_string(id));
         } else cout << "\n  [ALERT] Bin ID " << id << " was not found.\n";
@@ -613,32 +510,24 @@ void manageBins() {
     if (choice != 0) pressEnterToContinue();
 }
 
+// Generates a prioritized collection list using Quick Sort.
 void collectionSchedule() {
-    WasteBin tempArr[100]; int size = 0; avl_tree.getAll(tempArr, size);
-    if (size == 0) { cout << "  No bins available.\n"; pressEnterToContinue(); return; }
-    WasteBin quickArr[100];
-    for (int i = 0; i < size; i++) quickArr[i] = tempArr[i];
-    heapSort(tempArr, size);
-    quickSort(quickArr, 0, size - 1);
-    bool quickSortMatched = true;
-    for (int i = 0; i < size; i++) {
-        if (tempArr[i].id != quickArr[i].id) {
-            quickSortMatched = false;
-            break;
-        }
-    }
+    vector<WasteBin> tempArr = getAllBins();
+    if (tempArr.empty()) { cout << "  No bins available.\n"; pressEnterToContinue(); return; }
+    quickSort(tempArr.data(), 0, tempArr.size() - 1);
+
     cout << "\n  === Collection Priority List ===\n";
-    cout << "  Sorting Engine: Heap Sort | Quick Sort Cross-Check: " << (quickSortMatched ? "Matched" : "Different tie order") << "\n";
-    vector<int> w = {10, 8, 22, 6, 17}; drawLine(w);
-    printRow({"Priority", "Bin ID", "Location", "Fill", "Action Required"}, w); drawLine(w);
-    for (int i = 0; i < size; i++) {
-        string action = (tempArr[i].wasteLevel >= 80) ? "Collect Now" : ((tempArr[i].wasteLevel >= 50) ? "Schedule Soon" : "Routine Check");
+    cout << "  Sorting Engine: Quick Sort\n";
+    vector<int> w = {10, 8, 22, 6, 17}; printTableHeader({"Priority", "Bin ID", "Location", "Fill", "Action Required"}, w);
+    for (size_t i = 0; i < tempArr.size(); i++) {
+        string action = getActionRequired(tempArr[i].wasteLevel);
         printRow({to_string(i + 1), to_string(tempArr[i].id), tempArr[i].location, to_string((int)tempArr[i].wasteLevel) + "%", action}, w);
     }
     drawLine(w);
     action_stack.push("Viewed collection priority list"); pressEnterToContinue();
 }
 
+// Handles citizen requests via Queue (Enqueue/Dequeue).
 void serviceRequests() {
     cout << "\n  +--------------------------------------------------+\n"
          << "  |                 Service Requests                 |\n"
@@ -658,13 +547,13 @@ void serviceRequests() {
         cout << "\n  === Submit Service Request ===\n";
         cout << "  Enter Citizen Name: "; getline(cin, name); cout << "  Enter Location: "; getline(cin, location);
         cout << "  Enter Description: "; getline(cin, desc); cout << "  Enter Urgency (Low/Medium/High): "; getline(cin, urgency);
-        request_queue.enqueue({nextRequestId++, name, location, desc, urgency}); saveRequests();
+        request_queue.enqueue({nextRequestId++, name, location, desc, urgency});
         cout << "\n  [SUCCESS] Request Submitted Successfully!\n";
         action_stack.push("Submitted service request");
     } else if (choice == 3) {
         if (request_queue.isEmpty()) cout << "  No pending requests.\n";
         else {
-            ServiceRequest r = request_queue.dequeue(); saveRequests();
+            ServiceRequest r = request_queue.dequeue();
             cout << "\n  === Processing Request ===\n"
                  << "  Request ID: #" << r.id << "\n"
                  << "  Citizen: " << r.name << "\n"
@@ -678,6 +567,7 @@ void serviceRequests() {
     if (choice != 0) pressEnterToContinue();
 }
 
+// Recovers and reviews past actions via Stack (Push/Pop).
 void operationalRecovery() {
     cout << "\n  +--------------------------------------------------+\n"
          << "  |                   Recovery Log                   |\n"
@@ -701,6 +591,7 @@ void operationalRecovery() {
     if (choice != 0) pressEnterToContinue();
 }
 
+// Registers and searches vehicles using Hash Map (Chaining).
 void vehicleRegistry() {
     cout << "\n  +--------------------------------------------------+\n"
          << "  |                Vehicle Management                |\n"
@@ -733,13 +624,14 @@ void vehicleRegistry() {
         cout << "  Enter Plate: "; getline(cin, pl); cout << "  Enter Driver: "; getline(cin, dr);
         cout << "  Enter Type: "; getline(cin, ty); cout << "  Enter Status: "; getline(cin, st);
         cout << "  Enter Zone: "; getline(cin, zn);
-        vehicle_hash.insert({pl, dr, ty, st, zn}); saveVehicles();
+        vehicle_hash.insert({pl, dr, ty, st, zn});
         cout << "\n  [SUCCESS] Vehicle Registered Successfully.\n";
         action_stack.push("Registered vehicle " + pl);
     }
     if (choice != 0) pressEnterToContinue();
 }
 
+// Computes reachability (BFS), coverage (DFS), and shortest path (Dijkstra).
 void routeOptimizer() {
     cout << "\n  +--------------------------------------------------+\n"
          << "  |                  Route Planning                  |\n"
@@ -778,10 +670,11 @@ void routeOptimizer() {
     if (choice != 0) pressEnterToContinue();
 }
 
+// Generates metrics and statistics across the whole system.
 void environmentalReport() {
-    WasteBin tempArr[100]; int size = 0; avl_tree.getAll(tempArr, size);
+    vector<WasteBin> tempArr = getAllBins();
     int urgentCount = 0; double totalVolume = 0, recyclableVolume = 0;
-    for (int i = 0; i < size; i++) {
+    for (size_t i = 0; i < tempArr.size(); i++) {
         double volume = tempArr[i].wasteLevel * tempArr[i].capacity / 100.0;
         totalVolume += volume; if (tempArr[i].wasteLevel >= 80) urgentCount++;
         if (tempArr[i].wasteType == "Recyclable") recyclableVolume += volume;
@@ -791,8 +684,8 @@ void environmentalReport() {
     string bar = string(filled, '=') + string(15 - filled, ' ');
 
     cout << "\n  === Environmental Report ===\n";
-    vector<int> w = {38, 15}; drawLine(w); printRow({"Metric", "Value"}, w); drawLine(w);
-    printRow({"Total Bins Monitored", to_string(size)}, w);
+    vector<int> w = {38, 15}; printTableHeader({"Metric", "Value"}, w);
+    printRow({"Total Bins Monitored", to_string(tempArr.size())}, w);
     printRow({"Bins Needing Collection (>=80%)", to_string(urgentCount)}, w);
     printRow({"Estimated Waste Volume", to_string((int)totalVolume) + " L"}, w);
     printRow({"Recyclable Waste Share", to_string(rInt) + "." + to_string(rDec) + "%"}, w);
@@ -804,13 +697,12 @@ void environmentalReport() {
 
 void complexityAnalysis() {
     cout << "\n  === Technical Analysis Complexity ===\n";
-    vector<int> w = {26, 18, 12}; drawLine(w); printRow({"Feature Area", "Time Complexity", "Extra Space"}, w); drawLine(w);
+    vector<int> w = {26, 18, 12}; printTableHeader({"Feature Area", "Time Complexity", "Extra Space"}, w);
     printRow({"Bin add/search/remove", "O(log N)", "O(1)"}, w);
     printRow({"Vehicle plate lookup", "O(1) average", "O(1)"}, w);
     printRow({"Recovery log operation", "O(1)", "O(1)"}, w);
     printRow({"Service request handling", "O(1)", "O(1)"}, w);
-    printRow({"Heap sort scheduling", "O(N log N)", "O(1)"}, w);
-    printRow({"Quick sort validation", "O(N log N) avg", "O(log N)"}, w);
+    printRow({"Quick sort scheduling", "O(N log N) avg", "O(log N)"}, w);
     printRow({"Binary search by ID", "O(log N)", "O(1)"}, w);
     printRow({"Search by location", "O(N)", "O(1)"}, w);
     printRow({"Area coverage check", "O(V + E)", "O(V)"}, w);
@@ -819,6 +711,7 @@ void complexityAnalysis() {
     action_stack.push("Viewed technical analysis summary"); pressEnterToContinue();
 }
 
+// In-depth technical breakdown showing the structures used and their complexity.
 void technicalAnalysis() {
     cout << "\n  +--------------------------------------------------+\n"
          << "  |                Technical Analysis                |\n"
@@ -834,24 +727,28 @@ void technicalAnalysis() {
     if (choice == 1) {
         cout << "\n  === Primary Storage Status (AVL Tree) ===\n"; displayTree(avl_tree.root);
         string pStr = ""; treeCollectPreorder(avl_tree.root, pStr); cout << "\n  Preorder Traversal: " << pStr << "\n\n  === AVL Node Connections Table ===\n";
-        vector<int> w = {10, 15, 15}; drawLine(w); printRow({"Node ID", "Left Child", "Right Child"}, w); drawLine(w); treePrintTable(avl_tree.root, w); drawLine(w);
+        vector<int> w = {10, 15, 15}; printTableHeader({"Node ID", "Left Child", "Right Child"}, w); treePrintTable(avl_tree.root, w); drawLine(w);
     } else if (choice == 2) {
         cout << "\n  === Backup Storage Status (BST Tree) ===\n"; displayTree(bst_tree.root);
         string pStr = ""; treeCollectPreorder(bst_tree.root, pStr); cout << "\n  Preorder Traversal: " << pStr << "\n\n  === BST Node Connections Table ===\n";
-        vector<int> w = {10, 15, 15}; drawLine(w); printRow({"Node ID", "Left Child", "Right Child"}, w); drawLine(w); treePrintTable(bst_tree.root, w); drawLine(w);
+        vector<int> w = {10, 15, 15}; printTableHeader({"Node ID", "Left Child", "Right Child"}, w); treePrintTable(bst_tree.root, w); drawLine(w);
     } else if (choice == 3) {
         cout << "\n  === Storage Comparison ===\n";
-        vector<int> w = {25, 15}; drawLine(w); printRow({"Storage Structure", "Tree Height"}, w); drawLine(w);
+        vector<int> w = {25, 15}; printTableHeader({"Storage Structure", "Tree Height"}, w);
         printRow({"AVL Tree (Primary)", to_string(avl_tree.getHeight())}, w); printRow({"BST Tree (Backup)", to_string(bst_tree.getHeight())}, w); drawLine(w);
     } else if (choice == 4) { complexityAnalysis(); return; }
     if (choice != 0) pressEnterToContinue();
 }
 
+// ============================================================================
+// SECTION 9: MAIN APPLICATION ENTRY POINT
+// ============================================================================
+// Drives the application event loop and main menu UI.
 int main() {
     loadSampleData();
     while (true) {
-        WasteBin tempArr[100]; int size = 0; avl_tree.getAll(tempArr, size);
-        int urgentCount = 0; for (int i = 0; i < size; i++) { if (tempArr[i].wasteLevel >= 80) urgentCount++; }
+        vector<WasteBin> tempArr = getAllBins();
+        int urgentCount = 0; for (size_t i = 0; i < tempArr.size(); i++) { if (tempArr[i].wasteLevel >= 80) urgentCount++; }
         string recommendedAction;
         if (urgentCount > 0) recommendedAction = "Review Collection Planning";
         else if (request_queue.size() > 0) recommendedAction = "Process Citizen Requests";
@@ -861,7 +758,7 @@ int main() {
              << "  |  Smart Waste Collection & Recycling Management System  |\n"
              << "  +--------------------------------------------------------+\n"
              << "  |  System Status                                         |\n"
-             << "  |    Total Bins          : " << pad(to_string(size), 29) << " |\n"
+             << "  |    Total Bins          : " << pad(to_string(tempArr.size()), 29) << " |\n"
              << "  |    Urgent Bins         : " << pad(to_string(urgentCount) + " need collection", 29) << " |\n"
              << "  |    Pending Requests    : " << pad(to_string(request_queue.size()) + " citizen issues", 29) << " |\n"
              << "  |    Registered Vehicles : " << pad(to_string(vehicle_hash.count), 29) << " |\n"

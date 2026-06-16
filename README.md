@@ -20,7 +20,7 @@ The objective of this project is to design and implement a **Smart Waste Collect
 
 The primary technical and operational objectives of this project are:
 
-1. **Dynamic Priority Scheduling**: Prioritize high-waste generation zones dynamically using optimal **Custom Heap Sort** and **Quick Sort** Algorithms to order collection schedules based on urgency and fill-to-capacity ratios rather than static routes.
+1. **Dynamic Priority Scheduling**: Prioritize high-waste generation zones dynamically using optimal **Quick Sort** Algorithms to order collection schedules based on urgency and fill-to-capacity ratios rather than static routes.
 2. **High-Speed Record Retrieval**: Retrieve historical collection and recycling records rapidly using robust **Binary Search** and **Linear Search**, ensuring $O(\log N)$ performance for strict ID lookups.
 3. **Operational State Recovery (Undo)**: Manage operational recovery procedures securely using a **Custom Linked-List Stack** mechanism, allowing managers to safely pop accidental operations or incorrect assignments in $O(1)$ time.
 4. **Fair Service Request Handling**: Process incoming citizen complaints and service requests in a strictly fair, sequential order using a **Custom Linked-List Queue** (FIFO).
@@ -40,7 +40,7 @@ The smart waste platform is designed as an interactive command-line dashboard th
 1. **Citizen & Municipal Logging**: Users log service requests or operational tickets into the system, which are instantly safely captured in a **Queue**.
 2. **Registration & Tracking**: New waste bins and active recycling transport vehicles are registered. Vehicle license plates act as keys in a **Hash Table** to allow instant availability lookups.
 3. **Database Balancing**: The core storage of all waste bins is managed by an **AVL Tree**, actively rotating branches left or right upon insertions to remain height-balanced.
-4. **Prioritization Engine**: When collection planning is invoked, the database subset is copied into an array where **Heap Sort** applies a formula ($score = fillLevel \times \frac{capacity}{100}$) to float the most critical bins to the top of the collection list.
+4. **Prioritization Engine**: When collection planning is invoked, the database subset is copied into an array where **Quick Sort** applies a formula ($score = fillLevel \times \frac{capacity}{100}$) to float the most critical bins to the top of the collection list.
 5. **Route Finding**: Trucks are dispatched using **Dijkstra's Algorithm**, computing the cheapest sequence of travel across intersections modeled as vertices in a Graph.
 6. **Safety & Auditing**: Every destructive or important administrative action pushes a descriptive string to a **Recovery Stack**, granting administrators an ongoing audit log and the ability to undo the last mistake.
 ### ScreenShorts
@@ -94,7 +94,7 @@ graph TD
     E --> E1[Primary Storage - AVL Tree]
     E --> E2[Backup Storage - BST]
     
-    F --> F1[Prioritization Engine - Heap Sort & Quick Sort]
+    F --> F1[Prioritization Engine - Quick Sort]
     F --> F2[Route Optimization - Dijkstra's Algorithm]
     F --> F3[Network Mapping - BFS & DFS Graph]
     F --> F4[Record Lookup - Binary Search]
@@ -108,7 +108,7 @@ graph TD
 
 | Component / Feature | Data Structure / Algorithm | Technical Purpose |
 | :--- | :--- | :--- |
-| **Collection Scheduling** | Custom Heap Sort & Quick Sort | Builds a min/max heap array to prioritize waste collection schedules based on calculated fill levels and physical capacities in $O(N \log N)$. |
+| **Collection Scheduling** | Custom Quick Sort | Builds an array to prioritize waste collection schedules based on calculated fill levels and physical capacities in $O(N \log N)$. |
 | **Record Retrieval** | Binary Search & Linear Search | Binary Search parses arrays of sorted unique IDs efficiently ($O(\log N)$). Linear search scans text for substring location matches. |
 | **Recovery Procedures** | Custom Singly Linked-List Stack | Enforces LIFO (Last-In-First-Out) ordering to pop the most recent administrative change for undo operations. |
 | **Service Requests** | Custom Singly Linked-List Queue | Enforces FIFO (First-In-First-Out) to handle tickets fairly exactly in the order they arrived, managing a head and tail pointer. |
@@ -120,9 +120,8 @@ graph TD
 
 ## 2.6 Implementation Approach
 
-### 1. Collection Scheduling (Heap Sort & Quick Sort)
-* **Custom Heap Sort**: Implemented a min-heap structure that operates in-place on dynamic arrays. We calculate a combined `score` and arrange bins descendingly. Bins hitting $\ge 85\%$ fill capacity are flagged as "URGENT".
-* **Custom Quick Sort**: Implemented a partition-based Quick Sort to organize backup data arrays. It avoids recursive stack overflows by picking strategic pivot points. 
+### 1. Collection Scheduling (Quick Sort)
+* **Custom Quick Sort**: Implemented a partition-based Quick Sort to organize data arrays. It avoids recursive stack overflows by picking strategic pivot points. We calculate a combined `score` and arrange bins descendingly. Bins hitting $\ge 85\%$ fill capacity are flagged as "URGENT".
 
 ### 2. Record Retrieval (Searching Algorithms)
 * **Binary Search**: Written as a strictly iterative loop comparing `low`, `high`, and `mid` indices over sorted arrays of Bin IDs. 
@@ -155,7 +154,7 @@ The application enforces strict memory and CPU utilization bounds, crucial for m
 
 | Operation | Best Time | Worst Time | Space Complexity |
 | :--- | :--- | :--- | :--- |
-| **Heap Sort Scheduling** | $O(N \log N)$ | $O(N \log N)$ | $O(1)$ auxiliary (in-place) |
+| **Quick Sort Scheduling** | $O(N \log N)$ | $O(N^2)$ | $O(\log N)$ auxiliary |
 | **Binary Search lookup** | $O(1)$ | $O(\log N)$ | $O(1)$ local variables |
 | **Stack (Undo)** | $O(1)$ | $O(1)$ | $O(A)$ total stored actions |
 | **Queue (Tickets)** | $O(1)$ | $O(1)$ | $O(S)$ total pending tickets |
@@ -187,10 +186,7 @@ g++ -std=c++17 smart_waste_system.cpp -o smart_waste_system
 *(Note for VS Code users: The `.vscode/settings.json` is already configured to use `clang++ -std=c++17` if you use the built-in run button).*
 
 ### Data Files Required
-The program dynamically loads physical mock data at launch. You must ensure the following simple text files exist in the exact directory where the executable is launched:
-- `bins.txt` — contains initial bin IDs, capacities, and locations.
-- `vehicles.txt` — contains fleet license plates and vehicle types.
-- `requests.txt` — contains the backlog of citizen issues.
+The program dynamically loads physical mock data at launch. The data is centrally managed and compiled directly into the application via the `sample_data.h` header file, completely eliminating the need for external `.txt` file parsing and boosting initialization speed.
 
 ### Run
 Launch the compiled binary:
@@ -234,8 +230,8 @@ Upon launching `smart_waste_system`, the terminal renders a clean, real-time sta
   Enter Choice: 
 ```
 
-### 2. Collection Scheduling (Heap Sorted Priority List)
-When an administrator selects `[2]`, the backend copies the AVL tree into an array, invokes `heapSort()`, and outputs bins strictly sorted by mathematical urgency:
+### 2. Collection Scheduling (Priority List)
+When an administrator selects `[2]`, the backend copies the AVL tree into an array, invokes `quickSort()`, and outputs bins strictly sorted by mathematical urgency:
 
 ```text
   === Collection Priority List ===
@@ -279,7 +275,7 @@ Selecting option `[5]` -> `[4]` leverages Graph traversals to compute optimal lo
   `![Dashboard Screenshot](placeholders/dashboard.png)`
 
 - **Collection Planning Priority List:**
-  Displays the outputs of the Heap Sort algorithm.
+  Displays the outputs of the Quick Sort algorithm.
   `![Collection Planning](placeholders/priority.png)`
 
 - **Route Optimization Results:**
